@@ -3,12 +3,30 @@ import { isQuestion } from '@/lib/comments/questionFilter';
 import { makeBatch, verifyClusters, type Comment } from '@/lib/comments/zeroHallucinationCluster';
 import { selectGrowthTopics } from '@/lib/comments/fallbackHijacker';
 import { suggestNiche } from '@/lib/niches';
+import { getOrCreateUserState, readAppState, resetAppStateForTests, writeAppState } from '@/lib/store/appState';
 
 export async function POST(request: Request) {
   if (process.env.NODE_ENV !== 'development' || process.env.CLIPSPILL_ENGINE_TEST !== '1' || process.env.MOCK_YOUTUBE_API !== 'true') {
     return new Response(null, { status: 404 });
   }
   const input = await request.json();
+  if (input?.action === 'reset') {
+    resetAppStateForTests();
+    return Response.json({ reset: true });
+  }
+  if (input?.action === 'set_due') {
+    const userId = String(input.userId || 'demo-creator');
+    const user = getOrCreateUserState(userId);
+    const state = readAppState();
+    state.users[userId] = {
+      ...user,
+      frequencyHours: Number(input.frequencyHours ?? 48),
+      nextRunAt: new Date(Date.now() - 3_600_000).toISOString()
+    };
+    writeAppState(state);
+    return Response.json({ ok: true, nextRunAt: state.users[userId].nextRunAt });
+  }
+
   const now = new Date('2026-01-02T00:00:00Z');
   const base = { videoId: '12345678901', authorHandle: '@viewer', replyCount: 0, ownerReplied: false, publishedAt: now.toISOString() };
   const records: Comment[] = [

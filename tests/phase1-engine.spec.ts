@@ -21,7 +21,8 @@ test('home renders the ClipSpill shell with clean browser and API logs', async (
   page.on('pageerror', error => errors.push(error.message));
   page.on('response', response => { if (response.status() >= 500) errors.push(response.url()); });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: /Your next video.*is in the comments/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Viewer questions to ready scripts/i })).toBeVisible();
+  await expect(page.getByPlaceholder(/Search @channel, URL, or topic/i)).toBeVisible();
   expect(errors).toEqual([]);
 });
 

@@ -1,4 +1,6 @@
 import { isQuestion } from './questionFilter';
+import { fetchGeminiJson } from '../ai/request';
+import { ScanError } from '../preview/scanError';
 
 export type Comment = {
   id: string;
@@ -47,14 +49,15 @@ export function verifyClusters(batch: IndexedComment[], output: unknown): Topic[
   return topics.sort((a, b) => b.demandScore - a.demandScore);
 }
 
-export async function clusterWithGemini(batch: IndexedComment[], key: string, model = 'gemini-2.5-flash'): Promise<Topic[]> {
+export async function clusterWithGemini(batch: IndexedComment[], key: string, model = 'gemini-3.1-flash-lite'): Promise<Topic[]> {
   const lines = batch.filter(comment => isQuestion(comment.rawText))
+    .slice(0, 80)
     .map(comment => '[' + comment.batchIndex + ']: ' + JSON.stringify(comment.rawText));
   if (!lines.length) return [];
 
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+  const result = await fetchGeminiJson('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
     method: 'POST',
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(30_000),
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
       systemInstruction: {
@@ -62,6 +65,7 @@ export async function clusterWithGemini(batch: IndexedComment[], key: string, mo
       },
       contents: [{ parts: [{ text: lines.join('\n') }] }],
       generationConfig: {
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'ARRAY',
@@ -77,9 +81,8 @@ export async function clusterWithGemini(batch: IndexedComment[], key: string, mo
       }
     })
   });
-  if (!response.ok) throw new Error('Question grouping is temporarily unavailable.');
-  const result = await response.json();
-  const output = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (typeof output !== 'string') throw new Error('Question grouping returned no result.');
-  return verifyClusters(batch, JSON.parse(output));
+  if (!Array.isArray(result)) {
+    throw new ScanError('Gemini returned an incomplete question grouping. Try the scan again.', 502);
+  }
+  return verifyClusters(batch, result);
 }

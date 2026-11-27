@@ -2,254 +2,788 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown, CirclePlay, Clapperboard, Gamepad2, LayoutDashboard, MessageSquare, Mic, Monitor, Sparkles, Target, TrendingUp, Zap } from 'lucide-react';
-import { niches } from '../lib/niches';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, Bookmark, Clapperboard, LayoutDashboard, Lock, MessageSquareText, Plus, Search, Sparkles, TrendingUp, X } from 'lucide-react';
 import { demoDigest } from '../lib/preview/demo';
-import type { Digest, Inspection } from '../lib/preview/types';
+import { isLockedScript, type Digest, type Inspection } from '../lib/preview/types';
 import type { CreatorProfile } from '../lib/creator-profile';
 import { normalizeHandle } from '../lib/youtube/normalizeHandle';
+import { BentoGrid, BentoTile } from './magicui/bento-grid';
+import { BlurFade } from './magicui/blur-fade';
+import { NumberTicker } from './magicui/number-ticker';
+import { ShimmerButton } from './magicui/shimmer-button';
 import { ScriptCard } from './script-card';
+import { cn } from '@/lib/utils';
 
-const icons = [Mic, Gamepad2, Monitor, Target, TrendingUp];
-const featured = niches.slice(0, icons.length);
-
-export function Brand() {
-  return <Link className="brand" href="/"><span className="brand-logo"><Clapperboard size={21} strokeWidth={2.4} /></span>ClipSpill<span className="brand-dot">.</span></Link>;
+export function Brand({ inverted = false }: { inverted?: boolean }) {
+  return (
+    <Link
+      href="/"
+      className={cn(
+        'inline-flex items-center gap-2.5 text-lg font-bold tracking-tight',
+        inverted ? 'text-white' : 'text-[#141518]'
+      )}
+    >
+      <svg className="h-8 w-8 shrink-0" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <rect width="64" height="64" rx="16" fill={inverted ? '#ffffff' : '#141518'} />
+        <path
+          d="M18 22.5C18 19.4624 20.4624 17 23.5 17H40.5C43.5376 17 46 19.4624 46 22.5V35.5C46 38.5376 43.5376 41 40.5 41H28L20 47V41H23.5C20.4624 41 18 38.5376 18 35.5V22.5Z"
+          fill={inverted ? '#0b2545' : '#ffffff'}
+        />
+        <path d="M29 24L38 29L29 34V24Z" fill="#e85334" />
+        <circle cx="47" cy="47" r="4" fill="#e85334" />
+      </svg>
+      <span>
+        Clip<span className="text-[#e85334]">Spill</span>
+      </span>
+    </Link>
+  );
 }
 
-export function Studio({ live }: { live: boolean }) {
-  const [mode, setMode] = useState<'youtube' | 'niche'>('youtube');
-  const [reference, setReference] = useState('');
-  const [nicheId, setNicheId] = useState<string>('moto');
+function HeroVisual() {
+  return (
+    <div className="relative mx-auto flex h-[280px] w-full max-w-[380px] items-center justify-center overflow-hidden px-3 sm:h-[340px] sm:max-w-[420px] sm:overflow-visible sm:px-0">
+      {/* Subtle geometric wireframe */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-15" viewBox="0 0 400 340" fill="none">
+        <polygon points="200,25 350,275 50,275" stroke="#141518" strokeWidth="1.2" />
+        <circle cx="200" cy="175" r="110" stroke="#141518" strokeWidth="1" strokeDasharray="4 6" />
+      </svg>
+
+      {/* Main floating script card */}
+      <motion.div
+        animate={{ y: [0, -10, 0] }}
+        transition={{ repeat: Infinity, duration: 4.5, ease: 'easeInOut' }}
+        className="relative z-10 w-56 rounded-2xl border border-slate-900/10 bg-white p-3.5 text-[#141518] shadow-xl sm:w-64 sm:p-4"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="rounded-full bg-[#e85334]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#e85334]">
+            35s Short Ready
+          </span>
+          <span className="text-[11px] font-bold text-[#141518] sm:text-xs">84 Demand</span>
+        </div>
+        <p className="mt-2 text-xs font-bold leading-snug sm:mt-2.5 sm:text-sm">Best helmet mic under ₹2,000?</p>
+        <div className="mt-2.5 space-y-1.5 text-[10px] text-[#646975] sm:mt-3 sm:text-[11px]">
+          <div className="rounded-lg bg-[#f1f3f6] px-2.5 py-1.5 font-medium text-[#141518]">
+            0–3s · Comment-Reply Hook
+          </div>
+          <div className="rounded-lg bg-[#f1f3f6] px-2.5 py-1.5">
+            3–28s · Side-by-side wind test
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Floating viewer comment chip */}
+      <motion.div
+        animate={{ y: [0, 8, 0], x: [0, -4, 0] }}
+        transition={{ repeat: Infinity, duration: 3.8, ease: 'easeInOut', delay: 0.4 }}
+        className="absolute left-2 top-4 z-20 max-w-[210px] rounded-2xl border border-slate-900/10 bg-[#141518] px-3 py-2 text-white shadow-xl sm:left-0 sm:top-8 sm:max-w-none sm:px-3.5 sm:py-2.5"
+      >
+        <p className="text-[10px] font-semibold text-white/70">@arjun_rides · 18 likes</p>
+        <p className="mt-0.5 truncate text-[11px] font-medium sm:text-xs">&ldquo;bhai helmet mic link dede&rdquo;</p>
+      </motion.div>
+
+      {/* Floating Top-Short DNA badge */}
+      <motion.div
+        animate={{ y: [0, -7, 0], x: [0, 4, 0] }}
+        transition={{ repeat: Infinity, duration: 4.1, ease: 'easeInOut', delay: 0.8 }}
+        className="absolute bottom-5 right-2 z-20 flex items-center gap-2 rounded-2xl bg-[#e85334] px-3 py-1.5 text-white shadow-xl sm:bottom-8 sm:right-2 sm:px-3.5 sm:py-2"
+      >
+        <TrendingUp size={14} />
+        <div className="text-left">
+          <p className="text-[9px] font-medium text-white/85 sm:text-[10px]">Outlier DNA</p>
+          <p className="text-[11px] font-bold sm:text-xs">184K views · 168 WPM</p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export function Studio({ live, embedded = false }: { live: boolean; embedded?: boolean }) {
+  const [query, setQuery] = useState('');
   const [inspection, setInspection] = useState<Inspection | null>(null);
-  const [peers, setPeers] = useState<string[]>(niches[0].peers.map(peer => '@' + peer));
-  const [custom, setCustom] = useState('');
-  const [digest, setDigest] = useState<Digest>(() => demoDigest());
+  const [peers, setPeers] = useState<string[]>([]);
+  const [customPeer, setCustomPeer] = useState('');
+  const [digest, setDigest] = useState<Digest | null>(null);
   const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [extra, setExtra] = useState(false);
+  const [remainingTries, setRemainingTries] = useState<number>(2);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [paywallModal, setPaywallModal] = useState<{ open: boolean; handle: string; newComments: number }>({
+    open: false,
+    handle: '',
+    newComments: 0
+  });
 
   useEffect(() => {
     let active = true;
-    async function loadChannel() {
+    async function loadInitial() {
       let profile: Partial<CreatorProfile> | null = null;
       try {
-        const response = await fetch('/api/workspace');
-        if (response.ok) profile = (await response.json()).profile;
+        const [acct, tries] = await Promise.all([
+          fetch('/api/account').then(r => (r.ok ? r.json() : null)),
+          fetch('/api/preview').then(r => (r.ok ? r.json() : null))
+        ]);
+        if (active && typeof tries?.remainingTries === 'number') {
+          setRemainingTries(tries.remainingTries);
+        }
+        if (acct?.email) {
+          if (active) setLoggedIn(true);
+          const response = await fetch('/api/workspace');
+          if (response.ok) profile = (await response.json()).profile;
+        }
       } catch {
-        // Local preferences are available even when the account service is offline.
+        // Offline/local fallback
       }
       try {
         profile ??= JSON.parse(localStorage.getItem('clipspill-profile') ?? 'null');
-        const handle = profile?.channel_handle;
-        if (active && handle) setReference(value => value || handle);
+        if (!active || !profile) return;
+        if (profile.channel_handle) setQuery(prev => prev || profile?.channel_handle || '');
+        if (Array.isArray(profile.competitor_handles) && profile.competitor_handles.length) {
+          setPeers(profile.competitor_handles.slice(0, 3));
+        }
       } catch {
-        // A fresh workspace has an empty search field.
+        // Fresh workspace
       }
     }
-    void loadChannel();
+    void loadInitial();
     return () => { active = false; };
   }, []);
-
-  function chooseNiche(id: string) {
-    setMode('niche');
-    setInspection(null);
-    setMessage('');
-    setNicheId(id);
-    const niche = niches.find(item => item.id === id);
-    setPeers(niche?.peers.map(peer => '@' + peer) ?? []);
-    if (!live) {
-      setDigest(demoDigest(id));
-      setSelected(0);
-    }
-  }
-
-  async function scan<T>(action: string, channel: string, peersToScan: string[], niche = nicheId): Promise<T> {
-    const response = await fetch('/api/scan', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, reference: channel, nicheId: niche, peers: peersToScan })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? 'Could not complete the scan.');
-    return data;
-  }
-
-  function showDigest(next: Digest) {
-    setDigest(next);
-    setSelected(0);
-    document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
+    const trimmed = query.trim();
     setMessage('');
+
     if (!live) {
-      showDigest(demoDigest(nicheId));
+      setDigest(demoDigest('moto'));
+      setSelected(0);
       return;
     }
+    if (!trimmed && !peers.length) {
+      setMessage('Enter a @handle, URL, or topic.');
+      return;
+    }
+
     setBusy(true);
+    setInspection(null);
     try {
-      if (mode === 'youtube' && !inspection) {
-        const result = await scan<Inspection>('inspect', reference, []);
-        setInspection(result);
-        if (result.needsPeers) {
-          const nextNiche = niches.find(item => item.id === result.nicheId);
-          setNicheId(nextNiche?.id ?? '');
-          setPeers(nextNiche?.peers.map(peer => '@' + peer) ?? []);
-          return;
+      const ref = normalizeHandle(trimmed);
+      let activePeers = peers;
+      let topicLabel = trimmed;
+
+      if (!ref && trimmed) {
+        const discRes = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'discover', topic: trimmed })
+        });
+        if (discRes.ok) {
+          const disc = await discRes.json() as { nicheLabel: string; peerHandles: string[] };
+          topicLabel = disc.nicheLabel || trimmed;
+          if (!activePeers.length) activePeers = disc.peerHandles.slice(0, 3);
+          setPeers(activePeers);
         }
-        showDigest(await scan<Digest>('generate', reference, [], result.nicheId ?? ''));
-      } else {
-        showDigest(await scan<Digest>('generate', mode === 'youtube' ? reference : '', peers));
       }
+
+      const previewRes = await fetch('/api/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: ref ? trimmed : '',
+          topic: ref ? '' : topicLabel,
+          peers: activePeers
+        })
+      });
+
+      const rawText = await previewRes.text();
+      const payload = rawText ? JSON.parse(rawText) : {};
+      if (typeof payload.remainingTries === 'number') {
+        setRemainingTries(payload.remainingTries);
+      }
+
+      if (previewRes.status === 402 || payload.code === 'PREVIEW_ALREADY_USED') {
+        setPaywallModal({
+          open: true,
+          handle: payload.channelHandle || trimmed,
+          newComments: payload.newCommentCount ?? 0
+        });
+        return;
+      }
+      if (!previewRes.ok) {
+        throw new Error(payload.error ?? 'Scan could not finish.');
+      }
+
+      setInspection(null);
+      setDigest(payload as Digest);
+      setSelected(0);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'The scan could not finish.');
+      setMessage(error instanceof Error ? error.message : 'Scan could not finish.');
     } finally {
       setBusy(false);
     }
   }
 
   function addPeer() {
-    const normalized = normalizeHandle(custom);
+    const normalized = normalizeHandle(customPeer);
     if (!normalized || normalized.kind !== 'handle') {
-      setMessage('Enter a YouTube @handle to add a creator.');
+      setMessage('Enter a valid @handle.');
       return;
     }
     if (peers.some(peer => peer.toLowerCase() === normalized.value.toLowerCase())) {
-      setMessage('That creator is already selected.');
+      setMessage('Creator already added.');
       return;
     }
-    if (peers.length >= 3) {
-      setMessage('Choose up to three creators for the teaser.');
+    if (peers.length >= 5) {
+      setMessage('Up to 5 creators.');
       return;
     }
     setPeers(previous => [...previous, normalized.value]);
-    setCustom('');
+    setCustomPeer('');
     setMessage('');
   }
 
   async function save() {
+    if (!digest) return;
     try {
       const account = await fetch('/api/account').then(response => response.json());
       if (account.email) {
         const response = await fetch('/api/workspace', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'digest', digest })
         });
         if (!response.ok) throw new Error((await response.json()).error ?? 'Cloud save failed.');
-        setMessage('Digest saved in your account.');
+        setMessage('Saved to cloud.');
         return;
       }
       if (account.error) throw new Error(account.error);
       const previous = JSON.parse(localStorage.getItem('clipspill-digests') ?? '[]') as Digest[];
       localStorage.setItem('clipspill-digests', JSON.stringify([digest, ...previous.filter(item => item.id !== digest.id)].slice(0, 20)));
-      setMessage('Digest saved in your dashboard on this device.');
+      setMessage('Saved locally.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'The digest could not be saved.');
+      setMessage(error instanceof Error ? error.message : 'Could not save.');
     }
   }
 
-  const suggestions = niches.find(niche => niche.id === nicheId)?.peers.map(peer => '@' + peer) ?? [];
-  const showPeers = mode === 'niche' || inspection?.needsPeers;
-  const script = digest.scripts[selected];
+  const script = digest?.scripts[selected] ?? null;
+  const totalQuestions = digest?.scripts.reduce((sum, item) => sum + item.questions, 0) ?? 0;
+  const totalDemand = digest?.scripts.reduce((sum, item) => sum + item.score, 0) ?? 0;
+  const maxScore = digest?.scripts.length ? Math.max(...digest.scripts.map(item => item.score), 1) : 1;
+  const showLandingHero = !loggedIn && !digest && !busy && !embedded;
+
+  const modal = (
+    <AnimatePresence>
+      {paywallModal.open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 grid place-items-center bg-[#141518]/50 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="paywall-title"
+        >
+          <motion.div
+            initial={{ scale: 0.96, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.96, opacity: 0 }}
+            className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-900/10 bg-white p-6 shadow-2xl"
+          >
+            <button
+              type="button"
+              aria-label="Close modal"
+              onClick={() => setPaywallModal({ ...paywallModal, open: false })}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full bg-[#f1f3f6] text-[#646975] hover:text-[#141518]"
+            >
+              <X size={15} />
+            </button>
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e85334]/10 text-[#e85334]">
+              <Lock size={18} />
+            </div>
+            <h2 id="paywall-title" className="mt-4 text-lg font-semibold text-[#141518]">
+              1-Time Free Audit Used — Unlock Automatic Delivery
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-[#646975]">
+              {paywallModal.handle ? `${paywallModal.handle} ` : ''}
+              {paywallModal.newComments > 0 ? `has ${paywallModal.newComments} viewer questions ready. ` : ''}
+              Sign in and upgrade via Razorpay UPI AutoPay or Stripe to unlock Scripts #2 &amp; #3 and unlimited scans.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#e85334] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-[#d64527]"
+              >
+                Sign in &amp; Upgrade <ArrowUpRight size={14} />
+              </Link>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  const scanResultsSection = (
+    <div className="space-y-5">
+      {!busy && (message || inspection?.message || digest?.notes[0]) && (
+        <BlurFade>
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-medium text-[#141518] shadow-sm">
+            <span>{message || inspection?.message || digest?.notes[0]}</span>
+            {digest?.niche && (
+              <span className="rounded-full bg-[#f1f3f6] px-2.5 py-0.5 font-semibold text-[#141518]">
+                {digest.niche}
+              </span>
+            )}
+          </div>
+        </BlurFade>
+      )}
+
+      {busy && (
+        <BlurFade>
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-slate-900/10 bg-white p-6 text-center shadow-sm">
+            <div className="mx-auto h-1.5 w-48 overflow-hidden rounded-full bg-[#f1f3f6]">
+              <motion.div
+                className="h-full w-1/2 rounded-full bg-[#e85334]"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+              />
+            </div>
+            <p className="mt-3 text-xs font-medium text-[#646975]">
+              Reading viewer questions &amp; building scripts…
+            </p>
+          </div>
+        </BlurFade>
+      )}
+
+      {digest && !busy && (
+        <BentoGrid>
+          <div className={cn('space-y-4', embedded ? 'md:col-span-12' : 'md:col-span-8')}>
+            <BlurFade delay={0.04}>
+              <BentoTile className="p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {digest.channel && (
+                      digest.channel.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={digest.channel.avatarUrl}
+                          alt={digest.channel.title}
+                          referrerPolicy="no-referrer"
+                          className="h-11 w-11 rounded-full border border-slate-900/10 object-cover"
+                        />
+                      ) : (
+                        <div className="grid h-11 w-11 place-items-center rounded-full bg-[#141518] text-sm font-bold text-white">
+                          {digest.channel.title.slice(0, 1).toUpperCase()}
+                        </div>
+                      )
+                    )}
+                    <div>
+                      <h2 className="text-lg font-semibold tracking-tight text-[#141518] sm:text-xl">
+                        {digest.channel ? digest.channel.title : 'Question Demand'}
+                      </h2>
+                      <p className="mt-0.5 text-xs font-medium text-[#646975]">
+                        {digest.channel
+                          ? `${digest.channel.handle}${digest.channel.subscriberCount !== null ? ` · ${digest.channel.subscriberCount.toLocaleString()} subscribers` : ''} · `
+                          : ''}
+                        {digest.niche} · {digest.source === 'peers' ? 'Growth Mode' : 'Channel'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-slate-900/[0.08] bg-[#f1f3f6] px-3 py-1 text-xs font-medium text-[#141518]">
+                      {totalQuestions} questions
+                    </span>
+                    {loggedIn && (
+                      <button
+                        type="button"
+                        onClick={save}
+                        disabled={!digest.scripts.length}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/[0.08] bg-white px-3 py-1 text-xs font-medium text-[#141518] transition hover:bg-[#f1f3f6]"
+                      >
+                        <Bookmark size={12} /> Save
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="text-3xl font-bold tracking-tight text-[#141518] sm:text-4xl">
+                      <NumberTicker value={totalDemand} />
+                    </div>
+                    <p className="mt-1 text-xs text-[#646975]">
+                      Total demand score across {digest.scripts.length} scripts
+                    </p>
+                  </div>
+
+                  <div className="flex items-end gap-4 sm:gap-6">
+                    {digest.scripts.map((item, index) => {
+                      const height = Math.max(22, Math.round((item.score / maxScore) * 76));
+                      const active = selected === index;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelected(index)}
+                          className="group flex flex-col items-center gap-2"
+                        >
+                          <span className={cn(
+                            'rounded-full px-2 py-0.5 text-[11px] font-medium transition',
+                            active ? 'bg-[#141518] text-white' : 'text-[#646975]'
+                          )}>
+                            {item.score}
+                          </span>
+                          <div className="flex h-20 w-7 items-end justify-center rounded-full bg-[#f1f3f6] p-1">
+                            <div
+                              style={{ height: `${height}%` }}
+                              className={cn(
+                                'w-full rounded-full transition-all duration-300',
+                                active ? 'bg-[#e85334]' : 'bg-slate-300 group-hover:bg-slate-400'
+                              )}
+                            />
+                          </div>
+                          <span className={cn(
+                            'grid h-6 w-6 place-items-center rounded-full text-[11px] font-semibold transition',
+                            active ? 'bg-[#141518] text-white' : 'bg-[#f1f3f6] text-[#646975]'
+                          )}>
+                            {index + 1}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </BentoTile>
+            </BlurFade>
+
+            {script ? (
+              <ScriptCard
+                key={script.id}
+                script={script}
+                onUnlockRequest={() => setPaywallModal({ open: true, handle: query.trim() || digest.niche, newComments: totalQuestions })}
+              />
+            ) : (
+              <BentoTile className="py-10 text-center text-sm text-[#646975]">
+                No qualifying questions found. Try another @handle or topic.
+              </BentoTile>
+            )}
+          </div>
+
+          {!embedded && (
+            <div className="space-y-4 md:col-span-4">
+              <BlurFade delay={0.08}>
+                <BentoTile className="p-5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-[#141518]">Topics</h2>
+                    {loggedIn && (
+                      <Link href="/dashboard" className="text-xs font-medium text-[#646975] underline-offset-2 hover:text-[#141518] hover:underline">
+                        All digests
+                      </Link>
+                    )}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {digest.scripts.map((item, index) => {
+                      const active = selected === index;
+                      const locked = isLockedScript(item);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setSelected(index)}
+                          className={cn(
+                            'flex w-full items-start justify-between gap-3 rounded-2xl border p-3.5 text-left transition-all',
+                            active
+                              ? 'border-[#141518]/15 bg-[#f1f3f6]'
+                              : 'border-slate-900/[0.06] bg-white hover:bg-[#f1f3f6]/60'
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              {locked && <Lock size={12} className="shrink-0 text-[#e85334]" />}
+                              <span className="truncate text-sm font-semibold text-[#141518]">{item.title}</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-2 text-xs text-[#646975]">
+                              <span>{item.questions} questions</span>
+                              <span>·</span>
+                              <span>{item.likes} likes</span>
+                            </div>
+                          </div>
+                          <span className={cn(
+                            'shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium',
+                            active ? 'bg-[#141518] text-white' : 'bg-[#f1f3f6] text-[#646975]'
+                          )}>
+                            {item.score}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </BentoTile>
+              </BlurFade>
+
+              <BlurFade delay={0.12}>
+                <BentoTile className="p-5">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-[#141518]">Tracked Creators</h2>
+                    <span className="rounded-full bg-[#f1f3f6] px-2 py-0.5 text-[10px] font-semibold text-[#141518]">AI + DB</span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {peers.length ? peers.map(peer => (
+                      <span
+                        key={peer}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#f1f3f6] px-3 py-1 text-xs font-medium text-[#141518]"
+                      >
+                        {peer}
+                        <button
+                          type="button"
+                          aria-label={`Remove ${peer}`}
+                          onClick={() => setPeers(prev => prev.filter(p => p !== peer))}
+                          className="text-[#646975] hover:text-[#e85334]"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )) : (
+                      <span className="text-xs text-[#646975]">Auto-discovered on scan</span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <input
+                      aria-label="Add creator handle"
+                      placeholder="@handle"
+                      value={customPeer}
+                      maxLength={80}
+                      disabled={busy}
+                      onChange={event => setCustomPeer(event.target.value)}
+                      onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addPeer(); } }}
+                      className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2 text-xs text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={addPeer}
+                      disabled={busy}
+                      aria-label="Add creator"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#141518] text-white transition hover:bg-slate-800"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </BentoTile>
+              </BlurFade>
+            </div>
+          )}
+        </BentoGrid>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-5">
+        <div className="rounded-3xl border border-slate-900/[0.08] bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-bold tracking-tight text-[#141518]">
+            Viewer questions to <span className="text-[#e85334]">ready scripts</span>
+          </h2>
+          <form onSubmit={submit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              aria-label="Search channel or topic"
+              placeholder="Search @channel, URL, or topic..."
+              value={query}
+              disabled={busy}
+              maxLength={600}
+              onChange={event => { setQuery(event.target.value); setMessage(''); }}
+              className="flex-1 rounded-full border border-slate-900/10 bg-[#f1f3f6] px-4 py-2.5 text-sm text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+            />
+            <ShimmerButton type="submit" disabled={busy}>
+              <Sparkles size={13} className={cn('text-[#e85334]', busy && 'animate-spin')} />
+              <span>{busy ? 'Scanning…' : 'Scan'}</span>
+            </ShimmerButton>
+          </form>
+        </div>
+        {scanResultsSection}
+        {modal}
+      </div>
+    );
+  }
+
+  if (showLandingHero) {
+    return (
+      <div className="min-h-screen overflow-x-hidden bg-white">
+        <section className="relative overflow-hidden bg-[#f1f3f6] pb-20 text-[#141518] sm:pb-28">
+          <div className="mx-auto max-w-[1220px] px-4 pt-5 sm:px-6 md:px-10">
+            <header className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-6 sm:gap-8">
+                <Brand />
+                <nav aria-label="Main navigation" className="hidden items-center gap-6 text-sm font-medium sm:flex">
+                  <Link href="/" className="text-[#141518]">Studio</Link>
+                  <Link href="/dashboard" className="text-[#646975] transition hover:text-[#141518]">Dashboard</Link>
+                </nav>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="hidden rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-medium text-[#141518] sm:inline-flex">
+                  {remainingTries}/2 free scans left
+                </span>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-3.5 py-2 text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-slate-50 sm:px-4"
+                >
+                  <LayoutDashboard size={14} className="text-[#e85334]" /> Log In
+                </Link>
+              </div>
+            </header>
+
+            <div className="mt-8 grid grid-cols-1 items-center gap-8 sm:mt-12 sm:gap-10 lg:grid-cols-12">
+              <BlurFade className="lg:col-span-6">
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#e85334] sm:text-[11px]">
+                  CLIPSPILL · COMMENT-TO-SCRIPT ENGINE
+                </span>
+                <h1 className="mt-2.5 text-3xl font-extrabold uppercase leading-[1.05] tracking-tight text-[#141518] sm:mt-3 sm:text-5xl lg:text-6xl">
+                  Viewer questions to ready scripts
+                </h1>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-[#646975] sm:text-base">
+                  Turn repeated YouTube &amp; Reels viewer questions into 35-second vertical scripts backed by real comment proof.
+                </p>
+
+                <form onSubmit={submit} className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                  <div className="relative flex-1">
+                    <input
+                      aria-label="Search channel or topic"
+                      placeholder="Search @channel, URL, or topic..."
+                      value={query}
+                      disabled={busy}
+                      maxLength={600}
+                      onChange={event => { setQuery(event.target.value); setMessage(''); }}
+                      className="w-full rounded-full border border-slate-900/10 bg-white py-3.5 pl-5 pr-11 text-sm text-[#141518] shadow-sm placeholder:text-[#9ca3af] focus:border-[#e85334] focus:outline-none"
+                    />
+                    <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#646975]" />
+                  </div>
+                  <ShimmerButton type="submit" disabled={busy} className="h-12 px-7 text-xs font-bold uppercase tracking-wider">
+                    <Sparkles size={14} className="text-[#e85334]" />
+                    <span>{busy ? 'Scanning…' : 'Scan'}</span>
+                  </ShimmerButton>
+                </form>
+
+                {message && (
+                  <p className="mt-3 text-xs font-medium text-[#e85334]">{message}</p>
+                )}
+              </BlurFade>
+
+              <BlurFade delay={0.12} className="lg:col-span-6">
+                <HeroVisual />
+              </BlurFade>
+            </div>
+          </div>
+
+          {/* Smooth wave transition */}
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 1440 90"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute bottom-0 left-0 h-14 w-full fill-white sm:h-20"
+          >
+            <path d="M0,45 C360,95 1080,0 1440,55 L1440,90 L0,90 Z" />
+          </svg>
+        </section>
+
+        {/* Overlapping 3-column feature cards */}
+        <section className="relative z-20 mx-auto -mt-10 max-w-[1140px] px-4 pb-16 sm:-mt-16 sm:px-6 md:px-10">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {[
+              {
+                icon: Search,
+                title: 'COMMENT RADAR',
+                desc: 'Paste any @handle, video link, or niche topic to surface unanswered questions viewers keep asking.'
+              },
+              {
+                icon: MessageSquareText,
+                title: 'EVIDENCE SCORING',
+                desc: 'Every script topic is ranked by real viewer demand and linked directly to the original comments.'
+              },
+              {
+                icon: Clapperboard,
+                title: '35S VERTICAL SCRIPTS',
+                desc: 'Get structured hooks, angle switchers, reply sticker PNGs, and automated delivery on your schedule.'
+              }
+            ].map((card, index) => {
+              const Icon = card.icon;
+              return (
+                <BlurFade key={card.title} delay={0.08 + index * 0.08}>
+                  <motion.div
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.22 }}
+                    className="h-full rounded-2xl border border-slate-900/[0.08] bg-white p-7 text-center text-[#141518] shadow-[0_14px_40px_-14px_rgba(20,21,24,0.12)]"
+                  >
+                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#f1f3f6] text-[#e85334]">
+                      <Icon size={26} strokeWidth={1.9} />
+                    </div>
+                    <h2 className="mt-5 text-sm font-extrabold uppercase tracking-wider text-[#141518]">
+                      {card.title}
+                    </h2>
+                    <p className="mt-2.5 text-xs leading-relaxed text-[#646975]">
+                      {card.desc}
+                    </p>
+                  </motion.div>
+                </BlurFade>
+              );
+            })}
+          </div>
+        </section>
+
+        {modal}
+      </div>
+    );
+  }
 
   return (
-    <>
-      <header className="mast"><div className="frame mast-inner">
-        <Brand />
-        <nav aria-label="Main navigation">
-          <a href="#how">How it works</a>
-          <Link className="nav-action" href="/dashboard"><LayoutDashboard size={16} /> Dashboard <ArrowUpRight size={15} /></Link>
-        </nav>
-      </div></header>
-      <main>
-        <section className="hero frame">
-          <div className="hero-copy">
-            <span className="eyebrow hero-tag"><span /> COMMENT TO SCRIPT</span>
-            <h1>Your next video<br />is in the <em>comments<span>.</span></em></h1>
-            <p>Find what viewers keep asking and turn it into a ready-to-shoot YouTube Short or Instagram Reel.</p>
-            <a className="hero-link" href="#workspace"><CirclePlay size={20} /> Explore a sample <ArrowDownRight size={16} /></a>
+    <div className="min-h-screen bg-[#f8f9fb]">
+      <div className="mx-auto max-w-[1220px] px-4 py-5 sm:px-6 md:px-10">
+        <header className="flex flex-wrap items-center justify-between gap-4 pb-6">
+          <div className="flex items-center gap-6">
+            <Brand />
+            <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm font-medium">
+              <Link href="/" className="border-b-2 border-[#141518] pb-1 text-[#141518]">Studio</Link>
+              <Link href="/dashboard" className="pb-1 text-[#646975] transition hover:text-[#141518]">Dashboard</Link>
+            </nav>
           </div>
-          <div className="scan-panel">
-            <div className="scan-head"><span className="scan-mark"><Zap size={21} /></span><div><h2>Find your next script</h2><p>{live ? 'Start with a channel or a niche.' : 'Try the workflow with sample data.'}</p></div></div>
-            <div className="segmented" aria-label="Source type">
-              <button type="button" aria-pressed={mode === 'youtube'} disabled={busy} onClick={() => { setMode('youtube'); setMessage(''); }}><CirclePlay size={15} /> YouTube channel</button>
-              <button type="button" aria-pressed={mode === 'niche'} disabled={busy} onClick={() => { if (!nicheId) chooseNiche('moto'); else { setMode('niche'); setMessage(''); } }}><Sparkles size={15} /> Pick a niche</button>
+
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-slate-50"
+          >
+            <LayoutDashboard size={14} className="text-[#e85334]" />
+            <span>{loggedIn ? 'Dashboard' : 'Sign in'}</span>
+          </Link>
+        </header>
+
+        <div className="mb-5 rounded-3xl border border-slate-900/[0.07] bg-white p-5 shadow-sm sm:p-6">
+          <form onSubmit={submit} className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <input
+                aria-label="Search channel or topic"
+                placeholder="Search @channel, URL, or topic..."
+                value={query}
+                disabled={busy}
+                maxLength={600}
+                onChange={event => { setQuery(event.target.value); setMessage(''); }}
+                className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] py-3 pl-5 pr-11 text-sm text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+              />
+              <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#646975]" />
             </div>
-            <form onSubmit={submit}>
-              {mode === 'youtube' && <label className="channel-label" htmlFor="reference">YouTube handle or link
-                <input id="reference" name="reference" placeholder="@YourChannel" required={live} maxLength={600} value={reference} disabled={busy}
-                  onChange={event => { setReference(event.target.value); setInspection(null); setMessage(''); }} />
-              </label>}
-              {inspection?.message && <p className="form-note">{inspection.message}</p>}
-              {showPeers && <div className="peer-picker">
-                <label htmlFor="niche-picker">{inspection?.nicheId ? 'Detected niche' : 'Niche'}</label>
-                <select id="niche-picker" value={nicheId} disabled={busy} onChange={event => {
-                  const id = event.target.value;
-                  const niche = niches.find(item => item.id === id);
-                  setNicheId(id);
-                  setPeers(niche?.peers.map(peer => '@' + peer) ?? []);
-                }}>
-                  <option value="">Custom creators</option>
-                  {niches.map(niche => <option key={niche.id} value={niche.id}>{niche.label}</option>)}
-                </select>
-                <div className="peers" aria-label="Creators to scan">
-                  {[...new Set([...suggestions, ...peers])].map(peer => <button type="button" key={peer} disabled={busy}
-                    aria-pressed={peers.includes(peer)} onClick={() => {
-                      if (peers.includes(peer)) setPeers(peers.filter(item => item !== peer));
-                      else if (peers.length < 3) setPeers([...peers, peer]);
-                      else setMessage('Choose up to three creators for the teaser.');
-                    }}>{peer}</button>)}
-                </div>
-                <div className="add-peer"><input aria-label="Add creator handle" placeholder="@AnotherCreator" value={custom} maxLength={80} disabled={busy} onChange={event => setCustom(event.target.value)}
-                  onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addPeer(); } }} />
-                  <button type="button" className="quiet" disabled={busy} onClick={addPeer}>+ Add</button>
-                </div>
-              </div>}
-              <button className="btn primary scan-button" type="submit" disabled={busy}><Sparkles size={18} /> {busy ? 'Scanning comments…' : live ? 'Find script ideas' : 'Generate sample scripts'} <ArrowRight size={18} /></button>
-              <span className="form-status" role="status">{message}</span>
-            </form>
-          </div>
-        </section>
-        <section className="frame niches" aria-label="Browse niches">
-          <span className="eyebrow">EXPLORE A NICHE</span>
-          <div className="niche-row">
-            {featured.map((niche, index) => {
-              const Icon = icons[index];
-              return <button type="button" disabled={busy} key={niche.id} aria-pressed={niche.id === nicheId} onClick={() => chooseNiche(niche.id)}><Icon size={16} /> {niche.label}</button>;
-            })}
-            <button type="button" disabled={busy} aria-expanded={extra} onClick={() => setExtra(!extra)}>More <ChevronDown size={15} /></button>
-          </div>
-          {extra && <div className="niche-row extra-niches">{niches.slice(5).map(niche => <button type="button" disabled={busy} key={niche.id} aria-pressed={niche.id === nicheId} onClick={() => chooseNiche(niche.id)}>{niche.label}</button>)}</div>}
-        </section>
-        <section className="workspace" id="workspace">
-          <div className="frame">
-            <div className="workspace-head">
-              <div><span className="eyebrow">THE WORKSPACE</span><h2>From comment to camera<span>.</span></h2></div>
-              <div className="workspace-actions"><span className="source"><span /> {digest.source === 'demo' ? 'Sample data' : digest.source === 'peers' ? 'Growth Mode' : 'Your channel'} · {digest.niche}</span>
-                <button type="button" className="btn secondary" onClick={save} disabled={!digest.scripts.length}>Save digest</button></div>
-            </div>
-            <div className="workspace-grid">
-              <div className="topics">
-                <div className="topic-label"><MessageSquare size={16} /> Viewer questions</div>
-                {digest.scripts.map((item, index) => <button type="button" key={item.id} className="topic" aria-pressed={selected === index} onClick={() => setSelected(index)}>
-                  <span className="topic-title">{item.title}</span><span className="topic-meta">{item.questions} questions · {item.score} demand</span><ArrowUpRight size={16} />
-                </button>)}
-                {digest.notes.map(note => <p className="note" key={note}>{note}</p>)}
-                {message && <p className="note" role="status">{message}</p>}
-              </div>
-              {script ? <ScriptCard key={script.id} script={script} /> : <div className="script-card empty"><h3>No qualifying questions yet</h3><p>Try a different niche or select additional creators.</p></div>}
-            </div>
-          </div>
-        </section>
-        <section id="how" className="frame how">
-          <div><span className="eyebrow">HOW IT WORKS</span><h2>Start with demand<span>.</span></h2></div>
-          <p>Choose a channel or a niche. ClipSpill groups unanswered viewer questions, shows the evidence behind each topic, and gives you a script you can make your own.</p>
-        </section>
-      </main>
-      <footer className="frame footer"><Brand /><Link href="/dashboard">Open dashboard <ArrowUpRight size={15} /></Link></footer>
-    </>
+            <ShimmerButton type="submit" disabled={busy} className="h-11 px-6">
+              <Sparkles size={14} className={cn('text-[#e85334]', busy && 'animate-spin')} />
+              <span>{busy ? 'Scanning…' : 'Scan'}</span>
+            </ShimmerButton>
+          </form>
+        </div>
+
+        {scanResultsSection}
+      </div>
+      {modal}
+    </div>
   );
 }
