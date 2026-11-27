@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  YOUTUBE
+  INSTAGRAM
+}
+
+enum DigestStatus {
+  GENERATED
+  SENT
+}
+
+model User {
+  id                 String               @id @default(cuid())
+  email              String               @unique
+  name               String?
+  googleId           String?              @unique
+  frequencyHours     Int                  @default(48)
+  preferredHourIst   Int                  @default(9)
+  preferredMinute    Int                  @default(0)
+  preferredWeekday   Int                  @default(1)
+  triggerOnNewUpload Boolean              @default(false)
+  whatsappNumber     String?
+  createdAt          DateTime             @default(now())
+  channels           UserChannel[]
+  competitors        NicheCompetitorMap[]
+  clusterAssignments ClusterAssignment[]
+  digests            GeneratedDigest[]
+}
+
+model Channel {
+  id                 String               @id @default(cuid())
+  platform           Platform
+  externalChannelId  String
+  handle             String
+  title              String
+  subscriberCount    Int?
+  uploadsPlaylistId  String?
+  lastSyncedAt       DateTime?
+  topShortDnaJson    Json?
+  users              UserChannel[]
+  directory          DirectoryEntry[]
+  competitors        NicheCompetitorMap[]
+  comments           CommentRecord[]
+  clusters           QuestionCluster[]
+
+  @@unique([platform, externalChannelId])
+  @@index([platform, handle])
+}
+
+model UserChannel {
+  userId    String
+  channelId String
+  nextRunAt DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channelId])
+  @@index([nextRunAt])
+}
+
+model Niche {
+  slug        String           @id
+  title       String
+  keywords    Json
+  directory   DirectoryEntry[]
+  competitors NicheCompetitorMap[]
+}
+
+model DirectoryEntry {
+  nicheTag  String
+  channelId String
+  rank      Int
+  niche     Niche   @relation(fields: [nicheTag], references: [slug], onDelete: Cascade)
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([nicheTag, channelId])
+  @@index([nicheTag, rank])
+}
+
+model NicheCompetitorMap {
+  userId              String
+  competitorChannelId String
+  nicheTag            String
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competitor          Channel @relation(fields: [competitorChannelId], references: [id], onDelete: Cascade)
+  niche               Niche   @relation(fields: [nicheTag], references: [slug], onDelete: Cascade)
+
+  @@id([userId, competitorChannelId])
+}
+
+model CommentRecord {
+  id                String           @id @default(cuid())
+  channelId         String
+  videoId           String
+  videoTitle        String
+  externalCommentId String
+  authorHandle      String
+  rawText           String           @db.Text
+  likeCount         Int
+  replyCount        Int
+  ownerReplied      Boolean?
+  isQuestion        Boolean
+  publishedAt       DateTime
+  channel           Channel          @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  batchEntries      CommentBatchEntry[]
+  clusters          ClusterComment[]
+
+  @@unique([channelId, externalCommentId])
+  @@index([channelId, publishedAt])
+}
+
+model CommentBatch {
+  id        String              @id @default(cuid())
+  createdAt DateTime            @default(now())
+  entries   CommentBatchEntry[]
+}
+
+model CommentBatchEntry {
+  batchId    String
+  batchIndex Int
+  commentId  String
+  batch      CommentBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  comment    CommentRecord @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([batchId, batchIndex])
+  @@unique([batchId, commentId])
+}
+
+model QuestionCluster {
+  id                    String              @id @default(cuid())
+  sourceChannelId       String
+  isCompetitorFallback  Boolean             @default(false)
+  topicTitle            String
+  demandScore           Int
+  askCount              Int
+  totalLikes            Int
+  assignedUserCount     Int                 @default(0)
+  createdAt             DateTime            @default(now())
+  sourceChannel         Channel             @relation(fields: [sourceChannelId], references: [id], onDelete: Cascade)
+  comments              ClusterComment[]
+  assignments           ClusterAssignment[]
+
+  @@index([sourceChannelId, createdAt])
+}
+
+model ClusterComment {
+  clusterId String
+  commentId String
+  cluster   QuestionCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  comment   CommentRecord   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([clusterId, commentId])
+}
+
+model ClusterAssignment {
+  clusterId  String
+  userId     String
+  assignedAt DateTime        @default(now())
+  cluster    QuestionCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([clusterId, userId])
+}
+
+model GeneratedDigest {
+  id               String       @id @default(cuid())
+  userId           String
+  runKey           String
+  status           DigestStatus @default(GENERATED)
+  scriptsJson      Json
+  quickRepliesJson Json
+  createdAt        DateTime     @default(now())
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, runKey])
+  @@index([userId, createdAt])
+}
