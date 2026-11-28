@@ -792,22 +792,16 @@ export function Studio({
             {[
               {
                 icon: Search,
-                accent: 'border-t-[#e85334]',
-                iconBg: 'bg-[#e85334] text-white',
                 title: 'COMMENT RADAR',
                 desc: 'Paste any @handle, video link, or niche topic to surface unanswered questions viewers keep asking.'
               },
               {
                 icon: MessageSquareText,
-                accent: 'border-t-[#0b2545]',
-                iconBg: 'bg-[#0b2545] text-white',
                 title: 'EVIDENCE SCORING',
                 desc: 'Every script topic is ranked by real viewer demand and linked directly to the original comments.'
               },
               {
                 icon: Clapperboard,
-                accent: 'border-t-[#141518]',
-                iconBg: 'bg-[#141518] text-white',
                 title: '35S VERTICAL SCRIPTS',
                 desc: 'Get structured hooks, angle switchers, reply sticker PNGs, and automated delivery on your schedule.'
               }
@@ -818,18 +812,15 @@ export function Studio({
                   <motion.div
                     whileHover={{ y: -6 }}
                     transition={{ duration: 0.22 }}
-                    className={cn(
-                      'h-full rounded-2xl border border-slate-900/15 border-t-4 bg-white p-5 text-center text-[#141518] shadow-[0_18px_40px_-10px_rgba(11,37,69,0.22),0_4px_12px_-2px_rgba(11,37,69,0.08)] transition-all hover:shadow-[0_26px_55px_-10px_rgba(11,37,69,0.30)] sm:p-6',
-                      card.accent
-                    )}
+                    className="h-full rounded-2xl border border-slate-900/[0.08] bg-white p-5 text-center text-[#141518] shadow-[0_22px_55px_-12px_rgba(11,37,69,0.24),0_6px_16px_-4px_rgba(11,37,69,0.10)] transition-shadow hover:shadow-[0_28px_65px_-10px_rgba(11,37,69,0.32)] sm:p-6"
                   >
-                    <div className={cn('mx-auto grid h-12 w-12 place-items-center rounded-2xl shadow-md', card.iconBg)}>
-                      <Icon size={22} strokeWidth={2} />
+                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#f1f3f6] text-[#e85334]">
+                      <Icon size={22} strokeWidth={1.9} />
                     </div>
                     <h2 className="mt-4 text-xs font-extrabold uppercase tracking-wider text-[#141518] sm:text-sm">
                       {card.title}
                     </h2>
-                    <p className="mt-2 text-xs leading-relaxed text-[#4b5563]">
+                    <p className="mt-2 text-xs leading-relaxed text-[#646975]">
                       {card.desc}
                     </p>
                   </motion.div>
