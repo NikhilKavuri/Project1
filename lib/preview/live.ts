@@ -290,8 +290,15 @@ export async function buildFullDigest(input: {
     notes.unshift(`Growth Mode Active: Scanned ${countLabel} (${peerList}) over the last ${windowLabel} in your niche.`);
   }
 
-  const ownComments = channels.flatMap(channel => channel.comments)
-    .filter(comment => comment.ownerReplied === false && isQuestion(comment.rawText))
+  const ownComments = channels.flatMap(channel => {
+    const ownerHandle = channel.creator.handle.toLowerCase();
+    return channel.comments.filter(comment =>
+      comment.ownerReplied === false
+      && comment.authorHandle.toLowerCase() !== ownerHandle
+      && !/https?:\/\//i.test(comment.rawText)
+      && isQuestion(comment.rawText)
+    );
+  })
     .sort((a, b) => b.likeCount - a.likeCount || b.publishedAt.localeCompare(a.publishedAt))
     .slice(0, 90);
 

@@ -399,9 +399,9 @@ export function Studio({
     <div className="space-y-5">
       {!busy && (message || inspection?.message || digest?.notes[0]) && (
         <BlurFade>
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-medium text-[#141518] shadow-sm">
-            <span className="min-w-0 flex-1">{message || inspection?.message || digest?.notes[0]}</span>
-            <div className="flex items-center gap-2">
+          <div className="mx-auto flex max-w-5xl flex-col gap-2.5 rounded-2xl border border-slate-900/10 bg-white px-4 py-3 text-xs font-medium text-[#141518] shadow-sm sm:flex-row sm:items-center sm:justify-between sm:py-2.5">
+            <span className="min-w-0 flex-1 leading-relaxed">{message || inspection?.message || digest?.notes[0]}</span>
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
               {digest?.niche && (
                 <span className="rounded-full bg-[#f1f3f6] px-2.5 py-0.5 font-semibold text-[#141518]">
                   {digest.niche}
