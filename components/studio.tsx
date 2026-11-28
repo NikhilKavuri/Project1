@@ -147,10 +147,18 @@ export function Studio({
               return;
             }
             if (active && dash.account) {
-              if (dash.account.channelHandle) setQuery(prev => prev || dash.account.channelHandle);
-              if (Array.isArray(dash.account.competitorHandles)) setPeers(dash.account.competitorHandles.slice(0, 5));
+              const handle = dash.account.channelHandle || '';
+              const savedPeers = Array.isArray(dash.account.competitorHandles) ? dash.account.competitorHandles.slice(0, 5) : [];
+              if (handle) setQuery(prev => prev || handle);
+              setPeers(savedPeers);
               if (dash.account.city && dash.account.country) setLocationLabel(`${dash.account.city}, ${dash.account.country}`);
-              if (Array.isArray(dash.account.digests)) setSavedDigests(dash.account.digests.slice(0, 3));
+              if (Array.isArray(dash.account.digests) && dash.account.digests.length) {
+                setSavedDigests(dash.account.digests.slice(0, 3));
+                setDigest(dash.account.digests[0]);
+                setSelected(0);
+              } else if (handle && !embedded && live) {
+                void runScan(handle, savedPeers);
+              }
             }
           }
           const response = await fetch('/api/workspace');
@@ -174,29 +182,20 @@ export function Studio({
     }
     void loadInitial();
     return () => { active = false; };
-  }, [embedded]);
+  }, [embedded, live]);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (busy) return;
-    const trimmed = query.trim();
-    setMessage('');
-
-    if (!live) {
-      setDigest(demoDigest('moto'));
-      setSelected(0);
-      return;
-    }
-    if (!trimmed && !peers.length) {
+  async function runScan(targetQuery: string, targetPeers: string[]) {
+    const trimmed = targetQuery.trim();
+    if (!trimmed && !targetPeers.length) {
       setMessage('Enter a @handle, URL, or topic.');
       return;
     }
-
     setBusy(true);
     setInspection(null);
+    setMessage('');
     try {
       const ref = normalizeHandle(trimmed);
-      let activePeers = peers;
+      let activePeers = targetPeers;
       let topicLabel = trimmed;
 
       if (!ref && trimmed) {
@@ -249,6 +248,19 @@ export function Studio({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setMessage('');
+
+    if (!live) {
+      setDigest(demoDigest('moto'));
+      setSelected(0);
+      return;
+    }
+    await runScan(query, peers);
   }
 
   function addPeer() {
