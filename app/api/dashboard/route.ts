@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { rateSpyCommentsWithGemini } from '@/lib/ai/rateComments';
 import { buildFullDigest } from '@/lib/preview/live';
 import { getOrCreateUserState, readAppState, writeAppState } from '@/lib/store/appState';
 import { currentUser, isSupabaseConfigured } from '@/lib/supabase';
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       peers,
       userId
     });
-    const hijackQuestions = digest.scripts.flatMap(script =>
+    const rawQuestions = digest.scripts.flatMap(script =>
       'receipts' in script
         ? script.receipts.map(receipt => ({
           id: receipt.id,
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
         }))
         : []
     );
+    const hijackQuestions = await rateSpyCommentsWithGemini(rawQuestions);
 
     state.users[userId] = {
       ...userState,

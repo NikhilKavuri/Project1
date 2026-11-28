@@ -22,7 +22,17 @@ import { SnackbarHost, type ToastItem } from './ui/snackbar';
 import { cn } from '@/lib/utils';
 
 type Account = { configured: boolean; email: string | null };
-type HijackItem = { id: string; topic: string; author: string; text: string; likes: number; url: string | null };
+type HijackItem = {
+  id: string;
+  topic: string;
+  author: string;
+  text: string;
+  likes: number;
+  url: string | null;
+  potentialScore?: number;
+  stealDeal?: boolean;
+  reason?: string;
+};
 
 const CADENCES = [
   { value: 48, label: 'Every 2 Days (48h)' },
@@ -53,6 +63,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   const [preferredHourIst, setPreferredHourIst] = useState(9);
   const [triggerOnNewUpload, setTriggerOnNewUpload] = useState(false);
   const [hijackQuestions, setHijackQuestions] = useState<HijackItem[]>([]);
+  const [stealDealsOnly, setStealDealsOnly] = useState(false);
   const [tab, setTab] = useState<'scripts' | 'spy' | 'replies'>('scripts');
   const [open, setOpen] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -650,26 +661,74 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                   {!hijackQuestions.length ? (
                     <p className="text-xs text-[#646975]">Click Sync Competitor Spy above to fetch unanswered competitor viewer questions.</p>
                   ) : (
-                    <div className="space-y-2.5">
-                      {hijackQuestions.map(q => (
-                        <div key={q.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f1f3f6] p-3.5 text-xs">
-                          <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-[#141518]">{q.author}</span>
-                            <span className="ml-2 text-[#646975]">· {q.topic}</span>
-                            <p className="mt-1 text-[#4b5563]">{q.text}</p>
-                          </div>
-                          {q.url && (
-                            <a
-                              href={q.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#141518] px-3.5 py-1.5 font-medium text-white hover:bg-slate-800"
-                            >
-                              Direct Comment-Hijack Link <ArrowUpRight size={12} />
-                            </a>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+                        <span className="text-xs font-medium text-[#646975]">
+                          Sorted by Gemini video potential ({hijackQuestions.filter(q => q.stealDeal).length} steal deals found)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setStealDealsOnly(v => !v)}
+                          className={cn(
+                            'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                            stealDealsOnly
+                              ? 'border-transparent bg-[#e85334] text-white'
+                              : 'border-slate-900/10 bg-[#f1f3f6] text-[#141518] hover:bg-slate-200'
                           )}
-                        </div>
-                      ))}
+                        >
+                          {stealDealsOnly ? 'Showing Steal Deals Only' : 'Filter: Steal Deals Only'}
+                        </button>
+                      </div>
+
+                      {hijackQuestions
+                        .filter(q => !stealDealsOnly || q.stealDeal)
+                        .map(q => (
+                          <div
+                            key={q.id}
+                            className={cn(
+                              'flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-3.5 text-xs transition',
+                              q.stealDeal
+                                ? 'border-[#e85334]/35 bg-[#fff8f6] shadow-sm'
+                                : 'border-transparent bg-[#f1f3f6]'
+                            )}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {q.stealDeal && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#e85334] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                                    <Sparkles size={10} /> Steal Deal
+                                  </span>
+                                )}
+                                {typeof q.potentialScore === 'number' && (
+                                  <span className={cn(
+                                    'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                                    q.potentialScore >= 8
+                                      ? 'bg-emerald-500/15 text-emerald-700'
+                                      : 'bg-slate-900/10 text-[#646975]'
+                                  )}>
+                                    {q.potentialScore}/10
+                                  </span>
+                                )}
+                                <span className="font-semibold text-[#141518]">{q.author}</span>
+                                <span className="text-[#646975]">· {q.topic}</span>
+                              </div>
+                              <p className="mt-1.5 text-sm font-medium text-[#141518]">{q.text}</p>
+                              {q.reason && (
+                                <p className="mt-1 text-[11px] text-[#646975]">{q.reason}</p>
+                              )}
+                            </div>
+                            {q.url && (
+                              <a
+                                href={q.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#141518] px-3.5 py-1.5 font-medium text-white hover:bg-slate-800"
+                              >
+                                Direct Comment-Hijack Link <ArrowUpRight size={12} />
+                              </a>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </BentoTile>
