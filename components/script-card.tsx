@@ -59,11 +59,13 @@ export function ScriptCard({
   const [fills, setFills] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState('');
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
-  const [draftReply, setDraftReply] = useState(isLockedScript(script) ? '' : script.reply);
+  const staleReply = 'Good question! I’m putting together a quick test on this. What setup are you using?';
+
+  const [draftReply, setDraftReply] = useState(
+    isLockedScript(script) || script.reply === staleReply ? '' : script.reply
+  );
   const [draftCaption, setDraftCaption] = useState(isLockedScript(script) ? '' : script.reelCaption);
   const [replyBusy, setReplyBusy] = useState(false);
-
-  const staleReply = 'Good question! I’m putting together a quick test on this. What setup are you using?';
 
   async function suggestReply() {
     if (isLockedScript(script) || replyBusy) return;
@@ -347,17 +349,28 @@ export function ScriptCard({
                 ? 'Editable Reels caption — tweak and copy to paste on Instagram:'
                 : 'Editable draft reply — tweak, copy, and paste directly on YouTube:'}
             </p>
-            <textarea
-              rows={3}
-              value={format === 'Reels' ? draftCaption : draftReply}
-              onChange={event =>
-                format === 'Reels'
-                  ? setDraftCaption(event.target.value)
-                  : setDraftReply(event.target.value)
-              }
-              aria-label={format === 'Reels' ? 'Editable Reels caption' : 'Editable quick reply'}
-              className="w-full resize-y rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-xs leading-relaxed text-[#181c24] focus:border-[#6c90b8] focus:outline-none"
-            />
+            {format !== 'Reels' && replyBusy ? (
+              <div
+                aria-label="Drafting reply"
+                className="space-y-2 rounded-xl border border-slate-900/10 bg-white px-3 py-3"
+              >
+                <div className="h-3 w-11/12 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-3 w-4/5 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-3 w-2/5 animate-pulse rounded-full bg-slate-100" />
+              </div>
+            ) : (
+              <textarea
+                rows={3}
+                value={format === 'Reels' ? draftCaption : draftReply}
+                onChange={event =>
+                  format === 'Reels'
+                    ? setDraftCaption(event.target.value)
+                    : setDraftReply(event.target.value)
+                }
+                aria-label={format === 'Reels' ? 'Editable Reels caption' : 'Editable quick reply'}
+                className="w-full resize-y rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-xs leading-relaxed text-[#181c24] focus:border-[#6c90b8] focus:outline-none"
+              />
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
