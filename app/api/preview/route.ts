@@ -140,7 +140,22 @@ async function handlePreview({
   }
 
   const location = userState?.city && userState?.country ? `${userState.city}, ${userState.country}` : undefined;
-  const { digest, fullScripts, discoveredPeers } = await buildFullDigest({ reference, topic, peers, userId, location, expand });
+  let result: Awaited<ReturnType<typeof buildFullDigest>>;
+  try {
+    result = await buildFullDigest({ reference, topic, peers, userId, location, expand });
+  } catch (error) {
+    const canFallbackToTopic = Boolean(
+      reference
+      && !topic
+      && !reference.startsWith('@')
+      && normalized?.kind === 'handle'
+      && error instanceof ScanError
+      && error.status === 404
+    );
+    if (!canFallbackToTopic) throw error;
+    result = await buildFullDigest({ reference: '', topic: reference.trim(), peers, userId, location, expand });
+  }
+  const { digest, fullScripts, discoveredPeers } = result;
 
   // Logged-in users (or non-enforced local dev) get all 3 scripts unlocked
   if (userId || !enforceLocks) {
