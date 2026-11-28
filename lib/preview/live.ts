@@ -258,9 +258,6 @@ export async function buildFullDigest(input: {
   }
 
   const notes: string[] = [];
-  if (source === 'peers') {
-    notes.push('Growth Mode Active: Your channel had <3 new questions this week, so we scanned 3 top channels in your exact niche and found these unanswered viewer questions for you to hijack.');
-  }
 
   const results = source === 'own' && own ? [own] : await Promise.all(peers.map(async peer => {
     try {
@@ -276,6 +273,13 @@ export async function buildFullDigest(input: {
   const channels = results.filter((result): result is ChannelData => result !== null && !(result instanceof ScanError));
   const providerFailure = results.find((result): result is ScanError => result instanceof ScanError);
   if (!channels.length && providerFailure) throw providerFailure;
+
+  if (source === 'peers') {
+    const validHandles = channels.map(c => c.creator.handle);
+    const peerList = validHandles.length ? validHandles.join(', ') : peers.join(', ');
+    const countLabel = `${validHandles.length || peers.length} ${(validHandles.length || peers.length) === 1 ? 'channel' : 'channels'}`;
+    notes.unshift(`Growth Mode Active: Your channel had <3 new questions in the last 72h, so we scanned ${countLabel} (${peerList}) in your niche.`);
+  }
 
   const ownComments = channels.flatMap(channel => channel.comments)
     .filter(comment => comment.ownerReplied === false && isQuestion(comment.rawText))
