@@ -63,6 +63,7 @@ export type Digest = {
   source: 'demo' | 'own' | 'peers';
   niche: string;
   channel?: ChannelMeta;
+  channels?: ChannelMeta[];
   scripts: ScriptItem[];
   notes: string[];
   topShortDna?: TopShortDna[];

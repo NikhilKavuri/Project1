@@ -121,6 +121,8 @@ export function Studio({
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [remainingTries, setRemainingTries] = useState<number>(2);
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
+  const [channelsHovered, setChannelsHovered] = useState(false);
+  const [channelsPinned, setChannelsPinned] = useState(false);
   const runScanRef = useRef<(targetQuery: string, targetPeers: string[]) => Promise<void>>();
 
   function notify(text: string, tone: ToastItem['tone'] = 'info') {
@@ -437,41 +439,131 @@ export function Studio({
         </BlurFade>
       )}
 
-      {digest && !busy && (
+      {digest && !busy && (() => {
+        const scannedChannels = digest.channels?.length
+          ? digest.channels
+          : digest.channel
+            ? [digest.channel]
+            : [];
+        const hasMultipleChannels = scannedChannels.length > 1;
+        const showChannelsPopover = hasMultipleChannels && (channelsHovered || channelsPinned);
+        const primaryChannel = scannedChannels[0];
+        const commaSeparatedNames = scannedChannels.map(c => c.title).join(', ');
+        return (
         <BentoGrid>
-          <div className={cn('space-y-4', embedded ? 'md:col-span-12' : 'md:col-span-8')}>
+          <div className={cn('min-w-0 space-y-4', embedded ? 'md:col-span-12' : 'md:col-span-8')}>
             <BlurFade delay={0.04}>
-              <BentoTile className="p-5 sm:p-6">
+              <BentoTile className="overflow-visible p-4 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {digest.channel && (
-                      digest.channel.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={digest.channel.avatarUrl}
-                          alt={digest.channel.title}
-                          referrerPolicy="no-referrer"
-                          className="h-11 w-11 rounded-full border border-slate-900/10 object-cover"
-                        />
-                      ) : (
-                        <div className="grid h-11 w-11 place-items-center rounded-full bg-[#141518] text-sm font-bold text-white">
-                          {digest.channel.title.slice(0, 1).toUpperCase()}
+                  <div
+                    className="relative min-w-0 flex-1"
+                    onMouseEnter={() => { if (hasMultipleChannels) setChannelsHovered(true); }}
+                    onMouseLeave={() => { if (hasMultipleChannels) setChannelsHovered(false); }}
+                  >
+                    <button
+                      type="button"
+                      disabled={!hasMultipleChannels}
+                      aria-expanded={hasMultipleChannels ? showChannelsPopover : undefined}
+                      aria-label={hasMultipleChannels ? `Show all ${scannedChannels.length} scanned channels` : undefined}
+                      onClick={() => { if (hasMultipleChannels) setChannelsPinned(prev => !prev); }}
+                      className={cn(
+                        'flex w-full min-w-0 items-center gap-3 text-left',
+                        hasMultipleChannels ? 'cursor-pointer rounded-2xl transition hover:opacity-90' : 'cursor-default'
+                      )}
+                    >
+                      {scannedChannels.length > 0 && (
+                        <div className="flex shrink-0 -space-x-2.5">
+                          {scannedChannels.slice(0, 5).map((ch, idx) => (
+                            ch.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                key={`${ch.handle}-${idx}`}
+                                src={ch.avatarUrl}
+                                alt={ch.title}
+                                referrerPolicy="no-referrer"
+                                className="h-10 w-10 rounded-full border-2 border-white object-cover shadow-sm sm:h-11 sm:w-11"
+                              />
+                            ) : (
+                              <div
+                                key={`${ch.handle}-${idx}`}
+                                className="grid h-10 w-10 place-items-center rounded-full border-2 border-white bg-[#141518] text-xs font-bold text-white shadow-sm sm:h-11 sm:w-11"
+                              >
+                                {ch.title.slice(0, 1).toUpperCase()}
+                              </div>
+                            )
+                          ))}
                         </div>
-                      )
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h2 className="truncate text-base font-semibold tracking-tight text-[#141518] sm:text-xl">
+                          {hasMultipleChannels
+                            ? commaSeparatedNames
+                            : primaryChannel
+                              ? primaryChannel.title
+                              : 'Question Demand'}
+                        </h2>
+                        <p className="mt-0.5 truncate text-xs font-medium text-[#646975]">
+                          {hasMultipleChannels
+                            ? `${scannedChannels.length} channels scanned · ${digest.niche} · ${digest.source === 'peers' ? 'Growth Mode' : 'Channel'}`
+                            : (
+                              <>
+                                {primaryChannel
+                                  ? `${primaryChannel.handle}${primaryChannel.subscriberCount !== null ? ` · ${primaryChannel.subscriberCount.toLocaleString()} subscribers` : ''} · `
+                                  : ''}
+                                {digest.niche} · {digest.source === 'peers' ? 'Growth Mode' : 'Channel'}
+                              </>
+                            )}
+                        </p>
+                      </div>
+                    </button>
+
+                    {showChannelsPopover && (
+                      <div
+                        role="dialog"
+                        aria-label="Scanned channels"
+                        className="absolute left-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-2xl border border-slate-900/10 bg-white p-3 shadow-xl sm:w-80"
+                      >
+                        <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#646975]">
+                          <span>Scanned channels ({scannedChannels.length})</span>
+                          <button
+                            type="button"
+                            onClick={() => { setChannelsPinned(false); setChannelsHovered(false); }}
+                            className="rounded-full p-0.5 text-[#646975] hover:bg-[#f1f3f6] hover:text-[#141518]"
+                            aria-label="Close channels list"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <ul className="space-y-2">
+                          {scannedChannels.map((ch, idx) => (
+                            <li key={`${ch.handle}-pop-${idx}`} className="flex items-center gap-2.5 rounded-xl bg-[#f8f9fb] px-2.5 py-2">
+                              {ch.avatarUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={ch.avatarUrl}
+                                  alt={ch.title}
+                                  referrerPolicy="no-referrer"
+                                  className="h-8 w-8 shrink-0 rounded-full border border-slate-900/10 object-cover"
+                                />
+                              ) : (
+                                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#141518] text-xs font-bold text-white">
+                                  {ch.title.slice(0, 1).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-semibold text-[#141518]">{ch.title}</p>
+                                <p className="truncate text-[11px] text-[#646975]">
+                                  {ch.handle}
+                                  {ch.subscriberCount !== null ? ` · ${ch.subscriberCount.toLocaleString()} subs` : ''}
+                                </p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
-                    <div>
-                      <h2 className="text-lg font-semibold tracking-tight text-[#141518] sm:text-xl">
-                        {digest.channel ? digest.channel.title : 'Question Demand'}
-                      </h2>
-                      <p className="mt-0.5 text-xs font-medium text-[#646975]">
-                        {digest.channel
-                          ? `${digest.channel.handle}${digest.channel.subscriberCount !== null ? ` · ${digest.channel.subscriberCount.toLocaleString()} subscribers` : ''} · `
-                          : ''}
-                        {digest.niche} · {digest.source === 'peers' ? 'Growth Mode' : 'Channel'}
-                      </p>
-                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span className="rounded-full border border-slate-900/[0.08] bg-[#f1f3f6] px-3 py-1 text-xs font-medium text-[#141518]">
                       {totalQuestions} questions
                     </span>
@@ -552,7 +644,7 @@ export function Studio({
           </div>
 
           {!embedded && (
-            <div className="space-y-4 md:col-span-4">
+            <div className="min-w-0 space-y-4 md:col-span-4">
               <BlurFade delay={0.08}>
                 <BentoTile className="p-5">
                   <div className="flex items-center justify-between">
@@ -642,7 +734,7 @@ export function Studio({
                       disabled={busy}
                       onChange={event => setCustomPeer(event.target.value)}
                       onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addPeer(); } }}
-                      className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2 text-xs text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+                      className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2 text-base text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none sm:text-xs"
                     />
                     <button
                       type="button"
@@ -659,7 +751,8 @@ export function Studio({
             </div>
           )}
         </BentoGrid>
-      )}
+        );
+      })()}
     </div>
   );
 
@@ -678,7 +771,7 @@ export function Studio({
               disabled={busy}
               maxLength={600}
               onChange={event => { setQuery(event.target.value); setMessage(''); }}
-              className="flex-1 rounded-full border border-slate-900/10 bg-[#f1f3f6] px-4 py-2.5 text-sm text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+              className="flex-1 rounded-full border border-slate-900/10 bg-[#f1f3f6] px-4 py-2.5 text-base text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none sm:text-sm"
             />
             <ShimmerButton type="submit" disabled={busy}>
               <Sparkles size={13} className={cn('text-[#e85334]', busy && 'animate-spin')} />
@@ -809,7 +902,7 @@ export function Studio({
                       disabled={busy}
                       maxLength={600}
                       onChange={event => { setQuery(event.target.value); setMessage(''); }}
-                      className="w-full rounded-full border border-slate-900/10 bg-white py-3.5 pl-5 pr-11 text-sm text-[#141518] shadow-[0_10px_28px_-10px_rgba(11,37,69,0.18)] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:outline-none"
+                      className="w-full rounded-full border border-slate-900/10 bg-white py-3.5 pl-5 pr-11 text-base text-[#141518] shadow-[0_10px_28px_-10px_rgba(11,37,69,0.18)] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:outline-none sm:text-sm"
                     />
                     <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#646975]" />
                   </div>
@@ -924,7 +1017,7 @@ export function Studio({
                 disabled={busy}
                 maxLength={600}
                 onChange={event => { setQuery(event.target.value); setMessage(''); }}
-                className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] py-3 pl-5 pr-11 text-sm text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none"
+                className="w-full rounded-full border border-slate-900/10 bg-[#f1f3f6] py-3 pl-5 pr-11 text-base text-[#141518] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:bg-white focus:outline-none sm:text-sm"
               />
               <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#646975]" />
             </div>

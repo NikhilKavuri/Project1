@@ -178,7 +178,7 @@ export function AuthCard({
                 placeholder="you@creator.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-900/15 bg-white px-3.5 py-2.5 text-sm text-[#141518] placeholder:text-slate-400 focus:border-[#0b2545] focus:outline-none"
+                className="w-full rounded-xl border border-slate-900/15 bg-white px-3.5 py-2.5 text-base text-[#141518] placeholder:text-slate-400 focus:border-[#0b2545] focus:outline-none sm:text-sm"
               />
             </label>
 
@@ -194,7 +194,7 @@ export function AuthCard({
                   placeholder="8+ characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-900/15 bg-white py-2.5 pl-3.5 pr-10 text-sm text-[#141518] placeholder:text-slate-400 focus:border-[#0b2545] focus:outline-none"
+                  className="w-full rounded-xl border border-slate-900/15 bg-white py-2.5 pl-3.5 pr-10 text-base text-[#141518] placeholder:text-slate-400 focus:border-[#0b2545] focus:outline-none sm:text-sm"
                 />
                 <button
                   type="button"

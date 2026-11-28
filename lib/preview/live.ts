@@ -343,6 +343,12 @@ export async function buildFullDigest(input: {
           subscriberCount: primaryCreator.subscriberCount
         }
         : undefined,
+      channels: channels.map(c => ({
+        title: c.creator.title,
+        handle: c.creator.handle,
+        avatarUrl: c.creator.avatarUrl,
+        subscriberCount: c.creator.subscriberCount
+      })),
       scripts,
       notes,
       topShortDna

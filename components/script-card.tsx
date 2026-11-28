@@ -339,7 +339,7 @@ export function ScriptCard({
                   maxLength={80}
                   placeholder={`Replace "${activeChip.replace(/^\[|\]$/g, '')}"…`}
                   onChange={event => setFills({ ...fills, [activeChip]: event.target.value })}
-                  className="flex-1 rounded-xl border border-[#e85334]/35 bg-[#f8f9fb] px-3 py-2 text-xs text-[#181c24] placeholder:text-slate-400 focus:border-[#e85334] focus:bg-white focus:outline-none"
+                  className="flex-1 rounded-xl border border-[#e85334]/35 bg-[#f8f9fb] px-3 py-2 text-base text-[#181c24] placeholder:text-slate-400 focus:border-[#e85334] focus:bg-white focus:outline-none sm:text-xs"
                 />
                 {fills[activeChip] && (
                   <button
@@ -443,7 +443,7 @@ export function ScriptCard({
                     : setDraftReply(event.target.value)
                 }
                 aria-label={format === 'Reels' ? 'Editable Reels caption' : 'Editable quick reply'}
-                className="w-full resize-y rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-xs leading-relaxed text-[#181c24] focus:border-[#6c90b8] focus:outline-none"
+                className="w-full resize-y rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-base leading-relaxed text-[#181c24] focus:border-[#6c90b8] focus:outline-none sm:text-xs"
               />
             )}
             <div className="flex flex-wrap items-center gap-2">

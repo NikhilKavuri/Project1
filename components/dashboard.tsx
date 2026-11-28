@@ -209,7 +209,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
 
   const isUnlockedDashboard = Boolean(account.email) || testMode;
   const needsOnboarding = Boolean(account.email) && !testMode && (!state?.onboarded || editingOnboarding);
-  const inputCls = 'w-full rounded-xl border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2.5 text-xs text-[#141518] placeholder:text-[#9ca3af] focus:border-[#0b2545] focus:bg-white focus:outline-none';
+  const inputCls = 'w-full rounded-xl border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2.5 text-base text-[#141518] placeholder:text-[#9ca3af] focus:border-[#0b2545] focus:bg-white focus:outline-none sm:text-xs';
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
