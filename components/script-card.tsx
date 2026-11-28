@@ -61,6 +61,31 @@ export function ScriptCard({
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const [draftReply, setDraftReply] = useState(isLockedScript(script) ? '' : script.reply);
   const [draftCaption, setDraftCaption] = useState(isLockedScript(script) ? '' : script.reelCaption);
+  const [replyBusy, setReplyBusy] = useState(false);
+
+  const staleReply = 'Good question! I’m putting together a quick test on this. What setup are you using?';
+
+  async function suggestReply() {
+    if (isLockedScript(script) || replyBusy) return;
+    const topComment = script.receipts[0];
+    setReplyBusy(true);
+    try {
+      const response = await fetch('/api/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commentAuthor: topComment?.author ?? '',
+          commentText: topComment?.text ?? script.title,
+          topicTitle: script.title
+        })
+      });
+      if (!response.ok) return;
+      const data = (await response.json()) as { reply?: string };
+      if (data.reply) setDraftReply(data.reply);
+    } finally {
+      setReplyBusy(false);
+    }
+  }
 
   if (isLockedScript(script)) {
     return (
@@ -305,7 +330,14 @@ export function ScriptCard({
           </ul>
         </div>
 
-        <details className="mt-3 border-t border-slate-900/[0.06] pt-3">
+        <details
+          className="mt-3 border-t border-slate-900/[0.06] pt-3"
+          onToggle={event => {
+            if (event.currentTarget.open && (!draftReply.trim() || draftReply === staleReply)) {
+              void suggestReply();
+            }
+          }}
+        >
           <summary className="cursor-pointer text-xs font-semibold text-[#181c24]">
             Quick reply &amp; caption
           </summary>
@@ -339,6 +371,17 @@ export function ScriptCard({
               >
                 <Clipboard size={12} /> Copy {format === 'Reels' ? 'caption' : 'reply'}
               </button>
+              {format !== 'Reels' && (
+                <button
+                  type="button"
+                  disabled={replyBusy}
+                  onClick={() => void suggestReply()}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-3 py-1.5 text-xs font-medium text-[#181c24] transition hover:bg-slate-50 disabled:opacity-60"
+                >
+                  <Sparkles size={12} className="text-[#e85334]" />
+                  {replyBusy ? 'Drafting…' : 'Draft smart reply'}
+                </button>
+              )}
               {format !== 'Reels' && script.receipts[0]?.url && (
                 <a
                   href={script.receipts[0].url}
