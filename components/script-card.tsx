@@ -150,6 +150,21 @@ export function ScriptCard({
           </div>
         </div>
 
+        {(script.coreQuestion || script.receipts[0]) && (
+          <div className="mt-4 rounded-2xl border border-slate-900/[0.06] bg-[#f8f9fb] p-3.5 text-xs">
+            {script.coreQuestion && (
+              <p className="font-semibold text-[#141518]">
+                <span className="text-[#e85334]">What you&apos;re answering:</span> {script.coreQuestion}
+              </p>
+            )}
+            {script.receipts[0] && (
+              <p className={cn('text-[#646975]', script.coreQuestion && 'mt-1')}>
+                Top viewer ask ({script.receipts[0].author}): &ldquo;{script.receipts[0].text}&rdquo;
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-900/[0.06] pb-3">
           <div className="inline-flex rounded-full bg-[#eff1f4] p-1" role="group" aria-label="Format">
             {formats.map(item => (

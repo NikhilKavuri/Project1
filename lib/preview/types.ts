@@ -21,6 +21,7 @@ export type Script = {
   locked?: false;
   id: string;
   title: string;
+  coreQuestion?: string;
   score: number;
   questions: number;
   likes: number;

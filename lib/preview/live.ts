@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { discoverNicheAndPeers } from '../ai/discover';
+import { generateScriptsWithGemini } from '../ai/generateScripts';
 import { selectGrowthTopics } from '../comments/fallbackHijacker';
 import { isQuestion } from '../comments/questionFilter';
 import { clusterWithGemini, makeBatch, type Comment } from '../comments/zeroHallucinationCluster';
@@ -298,9 +299,15 @@ export async function buildFullDigest(input: {
   const topics = await clusterWithGemini(batch, process.env.GEMINI_API_KEY ?? '', process.env.GEMINI_MODEL);
   const id = randomUUID();
   const topShortDna = own?.topShortDna ?? channels[0]?.topShortDna ?? [];
-  const scripts = topics.slice(0, 3).map((topic, index) => makeScript(
-    topic.topicTitle,
-    topic.matchedIndices
+  const creatorContext = (own?.uploads ?? channels[0]?.uploads ?? [])
+    .slice(0, 4)
+    .map(u => `- ${u.title}: ${u.description.slice(0, 140)}`)
+    .join('\n');
+
+  const scriptInputs = topics.slice(0, 3).map((topic, index) => ({
+    id: `${id}-${index}`,
+    title: topic.topicTitle,
+    receipts: topic.matchedIndices
       .map(batchIndex => batch[batchIndex])
       .sort((a, b) => b.likeCount - a.likeCount)
       .map(comment => ({
@@ -310,10 +317,10 @@ export async function buildFullDigest(input: {
         likes: comment.likeCount,
         url: 'https://www.youtube.com/watch?' + new URLSearchParams({ v: comment.videoId, lc: comment.id })
       })),
-    id + '-' + index,
-    undefined,
-    topShortDna[index] ?? topShortDna[0]
-  ));
+    topShortDna: topShortDna[index] ?? topShortDna[0]
+  }));
+
+  const scripts = await generateScriptsWithGemini(scriptInputs, creatorContext);
 
   if (scripts.length < 3) notes.push('Fewer than 3 distinct unanswered topics in the last 72 hours.');
   const firstChannel = results.find((r): r is ChannelData => Boolean(r && 'creator' in r));
