@@ -55,7 +55,7 @@ export async function generateScriptsWithGemini(
         body: JSON.stringify({
           systemInstruction: {
             parts: [{
-              text: 'You are a sharp short-form video scriptwriter for YouTube Shorts and Instagram Reels. For each topic and its real viewer questions, write a clear, engaging 35-second vertical video script across 3 angles (Demo, Mistake, Price breakdown) that directly answers the viewer questions with a real story/talking points. NEVER invent personal product models, prices, or facts not present in the creator context—if a specific personal detail is needed, use an explicit [Insert your ...] placeholder. Keep hooks punchy (0-3s), bodies specific to the actual question (3-28s), and CTAs natural (28-35s).'
+              text: 'You are a sharp short-form video scriptwriter for YouTube Shorts and Instagram Reels. For each topic and its real viewer questions, write a clear, engaging 35-second vertical video script across 3 angles (Demo, Mistake, Price breakdown) that directly answers the viewer questions with a real story/talking points. Also write `reply` as a warm, direct 1-2 sentence YouTube comment reply specifically addressing the first viewer question (`viewer_questions[0]`), and `reel_caption` tailored to the topic. NEVER invent personal product models, prices, or facts not present in the creator context—if a specific personal detail is needed, use an explicit [Insert your ...] placeholder. Keep hooks punchy (0-3s), bodies specific to the actual question (3-28s), and CTAs natural (28-35s).'
             }]
           },
           contents: [{

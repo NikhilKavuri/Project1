@@ -59,6 +59,8 @@ export function ScriptCard({
   const [fills, setFills] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState('');
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  const [draftReply, setDraftReply] = useState(isLockedScript(script) ? '' : script.reply);
+  const [draftCaption, setDraftCaption] = useState(isLockedScript(script) ? '' : script.reelCaption);
 
   if (isLockedScript(script)) {
     return (
@@ -307,15 +309,47 @@ export function ScriptCard({
           <summary className="cursor-pointer text-xs font-semibold text-[#181c24]">
             Quick reply &amp; caption
           </summary>
-          <div className="mt-2.5 space-y-2 rounded-2xl bg-[#eff1f4] p-3 text-xs text-[#4b5563]">
-            <p className="whitespace-pre-wrap">{format === 'Reels' ? fill(script.reelCaption) : script.reply}</p>
-            <button
-              type="button"
-              onClick={() => copy(format === 'Reels' ? fill(script.reelCaption) : script.reply, 'Copied')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#181c24] shadow-sm transition hover:bg-slate-50"
-            >
-              <Clipboard size={12} /> Copy {format === 'Reels' ? 'caption' : 'reply'}
-            </button>
+          <div className="mt-2.5 space-y-2.5 rounded-2xl bg-[#eff1f4] p-3 text-xs text-[#4b5563]">
+            <p className="text-[11px] font-medium text-[#6b7280]">
+              {format === 'Reels'
+                ? 'Editable Reels caption — tweak and copy to paste on Instagram:'
+                : 'Editable draft reply — tweak, copy, and paste directly on YouTube:'}
+            </p>
+            <textarea
+              rows={3}
+              value={format === 'Reels' ? draftCaption : draftReply}
+              onChange={event =>
+                format === 'Reels'
+                  ? setDraftCaption(event.target.value)
+                  : setDraftReply(event.target.value)
+              }
+              aria-label={format === 'Reels' ? 'Editable Reels caption' : 'Editable quick reply'}
+              className="w-full resize-y rounded-xl border border-slate-900/10 bg-white px-3 py-2 text-xs leading-relaxed text-[#181c24] focus:border-[#6c90b8] focus:outline-none"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  copy(
+                    format === 'Reels' ? fill(draftCaption) : fill(draftReply),
+                    format === 'Reels' ? 'Caption copied' : 'Reply copied'
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#181c24] shadow-sm transition hover:bg-slate-50"
+              >
+                <Clipboard size={12} /> Copy {format === 'Reels' ? 'caption' : 'reply'}
+              </button>
+              {format !== 'Reels' && script.receipts[0]?.url && (
+                <a
+                  href={script.receipts[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-900/10 bg-white px-3 py-1.5 text-xs font-medium text-[#6c90b8] transition hover:bg-slate-50"
+                >
+                  Open comment on YouTube <ArrowUpRight size={12} />
+                </a>
+              )}
+            </div>
           </div>
         </details>
 

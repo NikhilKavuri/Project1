@@ -42,9 +42,9 @@ export function makeScript(
     score: questions * 10 + 2 * likes,
     receipts,
     angles,
-    reelCta: 'Save this for your next test and send it to someone comparing setups.',
-    reelCaption: `${title}\n\nMy setup: [Insert your exact setup & model]\nMy result: [your actual result]\n\n#CreatorTips #Reels`,
-    reply: 'Good question! I’m putting together a quick test on this. What setup are you using?',
+    reelCta: 'Save this and share it with someone who asked the same thing.',
+    reelCaption: `${title}\n\n[Insert your quick takeaway here]\n\n#Shorts #Reels`,
+    reply: `Great question${receipts[0]?.author ? ` ${receipts[0].author}` : ''}! I'm putting together a Short covering ${title.toLocaleLowerCase()}—drop any follow-up details you want me to include.`,
     framework,
     topShortDna
   };
