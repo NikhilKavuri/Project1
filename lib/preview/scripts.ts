@@ -9,15 +9,16 @@ export function makeScript(
 ): Script {
   const questions = receipts.length;
   const likes = receipts.reduce((sum, receipt) => sum + receipt.likes, 0);
+  const topAsk = receipts[0]?.text ? receipts[0].text.slice(0, 90) : title;
   const hooks: Record<Angle, string> = {
-    Demo: hook ?? `Here’s the quickest way to test this: ${title.toLocaleLowerCase()}.`,
-    Mistake: 'Check this one detail before you copy my setup.',
-    'Price breakdown': 'Before you spend anything, here’s how I’d decide what is worth paying for.'
+    Demo: hook ?? `Everyone keeps asking about ${title.toLocaleLowerCase()}—so here is the real story behind it.`,
+    Mistake: `Before you copy what you saw in my last clip on ${title.toLocaleLowerCase()}, watch this part closely.`,
+    'Price breakdown': `Is ${title.toLocaleLowerCase()} actually worth it? Here is what nobody tells you upfront.`
   };
   const bodies: Record<Angle, string> = {
-    Demo: 'First, show [Insert your exact setup & model]. Run [your quick test] and show one close-up of what changes. Here’s the result I got: [your actual result]. If you try it yourself, repeat the same test before you decide.',
-    Mistake: 'Here’s what I see people miss: [specific mistake]. Show what happens when you do it that way. Now change [one thing you tested] and replay the same shot. Here’s what changed for me: [verified result].',
-    'Price breakdown': 'This is [Insert your exact mic model & price] and it cost me [actual price you paid]. Here’s what I used it for: [your use case]. Compare it to [alternative you have tested] and show which difference matters for your setup.'
+    Demo: `So ${receipts[0]?.author || 'a viewer'} asked: "${topAsk}". Start with a tight close-up of my main setup, then walk through the exact 10-second fix I actually use every day. The biggest difference showed up right after I switched to my current routine—and that's the exact detail most people miss.`,
+    Mistake: `When I first tried this, I made the classic mistake on my first run and wondered why nothing changed. The moment I adjusted one small habit, the whole result flipped. Watch the side-by-side in the second half so you don't waste a week figuring it out.`,
+    'Price breakdown': `People assume you need the expensive option, which usually runs around ₹2,500, but my everyday pick cost roughly ₹800 and handled 90% of the same work. I'll show where the extra spend actually matters—and where you can safely skip it.`
   };
   const angles = Object.fromEntries((Object.keys(hooks) as Angle[]).map(angle => {
     const beats: Beat[] = [
@@ -43,8 +44,9 @@ export function makeScript(
     receipts,
     angles,
     reelCta: 'Save this and share it with someone who asked the same thing.',
-    reelCaption: `${title}\n\n[Insert your quick takeaway here]\n\n#Shorts #Reels`,
+    reelCaption: `${title}\n\nHere's the real story behind it.\n\n#Shorts #Reels`,
     reply: `Great question${receipts[0]?.author ? ` ${receipts[0].author}` : ''}! I'm putting together a Short covering ${title.toLocaleLowerCase()}—drop any follow-up details you want me to include.`,
+    swappableChips: ['my main setup', '₹2,500', '₹800'],
     framework,
     topShortDna
   };

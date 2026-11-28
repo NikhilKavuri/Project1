@@ -24,6 +24,7 @@ type GeneratedScriptPayload = {
   reel_cta: string;
   reel_caption: string;
   reply: string;
+  swappable_chips: string[];
 };
 
 export async function generateScriptsWithGemini(
@@ -53,7 +54,7 @@ export async function generateScriptsWithGemini(
           body: JSON.stringify({
             systemInstruction: {
               parts: [{
-                text: 'You are a sharp short-form video scriptwriter for YouTube Shorts and Instagram Reels. For the topic and its real viewer questions, write a clear, engaging 35-second vertical video script across 3 angles (Demo, Mistake, Price breakdown) that directly answers the viewer questions with a real story/talking points. Also write `reply` as a warm, direct 1-2 sentence YouTube comment reply specifically addressing the first viewer question (`viewer_questions[0]`), and `reel_caption` tailored to the topic. NEVER invent personal product models, prices, or facts not present in the creator context—if a specific personal detail is needed, use an explicit [Insert your ...] placeholder. Keep hooks punchy (0-3s), bodies specific to the actual question (3-28s), and CTAs natural (28-35s).'
+                text: 'You are an elite short-form video strategist writing viral, high-retention 35-second YouTube Shorts and Instagram Reels scripts. Write in natural, punchy, spoken creator voice—NEVER corporate or robotic ("Curious about...", "Here is the quickest way...", "Let me break it down..."). Start 0-3s Hooks with a scroll-stopping pattern interrupt, bold opinion, or direct viewer callout tied to the exact comment. For 3-28s Story & Answer, write a COMPLETE, ready-to-shoot story with concrete, realistic details (e.g. an actual dish, price, neighborhood, or number) and visual pacing—NEVER use [Insert ...] brackets. Include `swappable_chips`: 2 to 4 short exact phrases (1-4 words each) that appear VERBATIM inside your script text (like a specific price, place, or item) so the creator can swap them to match their exact reality. Also write `reply` as a warm, direct 1-2 sentence YouTube reply addressing `viewer_questions[0]`, and `reel_caption`.'
               }]
             },
             contents: [{
@@ -79,13 +80,14 @@ export async function generateScriptsWithGemini(
                   price_cta: { type: 'STRING' },
                   reel_cta: { type: 'STRING' },
                   reel_caption: { type: 'STRING' },
-                  reply: { type: 'STRING' }
+                  reply: { type: 'STRING' },
+                  swappable_chips: { type: 'ARRAY', items: { type: 'STRING' } }
                 },
                 required: [
                   'core_question', 'demo_hook', 'demo_body', 'demo_cta',
                   'mistake_hook', 'mistake_body', 'mistake_cta',
                   'price_hook', 'price_body', 'price_cta',
-                  'reel_cta', 'reel_caption', 'reply'
+                  'reel_cta', 'reel_caption', 'reply', 'swappable_chips'
                 ]
               }
             }
@@ -114,13 +116,19 @@ export async function generateScriptsWithGemini(
         ]
       };
 
+      const allText = Object.values(angles).flat().map(b => b.text).join('\n');
+      const swappableChips = Array.isArray(gen.swappable_chips)
+        ? [...new Set(gen.swappable_chips.map(c => c.trim()).filter(c => c.length >= 2 && c.length <= 50 && allText.includes(c)))].slice(0, 4)
+        : [];
+
       return {
         ...base,
         coreQuestion: gen.core_question || base.coreQuestion,
         angles,
         reelCta: gen.reel_cta || base.reelCta,
         reelCaption: gen.reel_caption || base.reelCaption,
-        reply: gen.reply || base.reply
+        reply: gen.reply || base.reply,
+        swappableChips
       };
     } catch {
       return base;

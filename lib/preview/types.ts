@@ -30,6 +30,7 @@ export type Script = {
   reelCta: string;
   reelCaption: string;
   reply: string;
+  swappableChips?: string[];
   framework?: HookFramework;
   topShortDna?: TopShortDna;
 };

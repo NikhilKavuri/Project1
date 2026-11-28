@@ -57,6 +57,7 @@ export function ScriptCard({
   const [angle, setAngle] = useState<Angle>('Demo');
   const [format, setFormat] = useState<Format>('Shorts');
   const [fills, setFills] = useState<Record<string, string>>({});
+  const [activeChip, setActiveChip] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
   const [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const staleReply = 'Good question! I’m putting together a quick test on this. What setup are you using?';
@@ -136,10 +137,47 @@ export function ScriptCard({
   const beats = script.angles[angle].map((beat, index) =>
     format === 'Reels' && index === 2 ? { ...beat, time: '29–38s', label: 'Reels CTA', text: script.reelCta } : beat
   );
-  const blanks = [...new Set(beats.flatMap(beat => beat.text.match(/\[[^\]]+\]/g) ?? []))];
-  const fill = (text: string) => blanks.reduce((value, blank) => value.replaceAll(blank, fills[blank]?.trim() || blank), text);
+  const bracketBlanks = [...new Set(beats.flatMap(beat => beat.text.match(/\[[^\]]+\]/g) ?? []))];
+  const chips = [
+    ...new Set([
+      ...(script.swappableChips ?? []).filter(chip => beats.some(beat => beat.text.includes(chip))),
+      ...bracketBlanks
+    ])
+  ];
+  const fill = (text: string) =>
+    chips.reduce((value, chip) => value.replaceAll(chip, fills[chip]?.trim() || chip), text);
   const words = beats.reduce((count, beat) => count + fill(beat.text).split(/\s+/).filter(Boolean).length, 0);
   const seconds = Math.round(words / 2.6);
+
+  function renderHighlighted(text: string) {
+    if (!chips.length) return text;
+    const escaped = chips
+      .slice()
+      .sort((a, b) => b.length - a.length)
+      .map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(${escaped.join('|')})`, 'g');
+    const parts = text.split(regex);
+    return parts.map((part, idx) => {
+      if (!chips.includes(part)) return part;
+      const display = fills[part]?.trim() || part.replace(/^\[|\]$/g, '');
+      return (
+        <button
+          key={`${part}-${idx}`}
+          type="button"
+          onClick={() => setActiveChip(prev => (prev === part ? null : part))}
+          title="Click to customize this detail"
+          className={cn(
+            'mx-0.5 inline-flex items-center rounded-md border px-1.5 py-0.5 text-[13px] font-semibold transition',
+            activeChip === part
+              ? 'border-[#e85334] bg-[#e85334] text-white'
+              : 'border-[#e85334]/30 bg-[#e85334]/10 text-[#c93b1e] hover:bg-[#e85334]/20'
+          )}
+        >
+          {display}
+        </button>
+      );
+    });
+  }
 
   async function copy(text: string, label: string) {
     try {
@@ -253,7 +291,7 @@ export function ScriptCard({
                   <span className="font-mono text-xs font-medium text-[#6c90b8]">{beat.time}</span>
                   <div>
                     <strong className="text-xs font-semibold uppercase tracking-wider text-[#181c24]">{beat.label}</strong>
-                    <p className="mt-1 text-sm leading-relaxed text-[#4b5563]">{fill(beat.text)}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-[#4b5563]">{renderHighlighted(beat.text)}</p>
                   </div>
                 </div>
               ))}
@@ -261,27 +299,64 @@ export function ScriptCard({
           </motion.div>
         </AnimatePresence>
 
-        {blanks.length > 0 && (
-          <details open className="group mt-2 border-t border-slate-900/[0.06] pt-3">
-            <summary className="flex cursor-pointer items-center justify-between text-xs font-semibold text-[#181c24]">
-              <span>Customize placeholders ({blanks.length})</span>
-              <span className="text-[#6b7280]">Live update</span>
-            </summary>
-            <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {blanks.map(blank => (
-                <label key={blank} className="grid gap-1 text-xs font-medium text-[#6b7280]">
-                  <span>{blank.slice(1, -1)}</span>
-                  <input
-                    value={fills[blank] ?? ''}
-                    maxLength={80}
-                    placeholder="Type value…"
-                    onChange={event => setFills({ ...fills, [blank]: event.target.value })}
-                    className="rounded-xl border border-slate-900/10 bg-[#eff1f4] px-3 py-2 text-xs text-[#181c24] placeholder:text-slate-400 focus:border-[#6c90b8] focus:bg-white focus:outline-none"
-                  />
-                </label>
-              ))}
+        {chips.length > 0 && (
+          <div className="mt-2 border-t border-slate-900/[0.06] pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-[#181c24]">
+                Swappable details ({chips.length})
+              </span>
+              <span className="text-[11px] text-[#6b7280]">Tap any highlighted chip to swap</span>
             </div>
-          </details>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {chips.map(chip => {
+                const label = chip.replace(/^\[|\]$/g, '');
+                const custom = fills[chip]?.trim();
+                const isSelected = activeChip === chip;
+                return (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setActiveChip(prev => (prev === chip ? null : chip))}
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition',
+                      isSelected
+                        ? 'border-[#e85334] bg-[#e85334] text-white'
+                        : custom
+                          ? 'border-[#0b2545]/20 bg-[#0b2545]/5 text-[#0b2545]'
+                          : 'border-[#e85334]/25 bg-[#e85334]/10 text-[#c93b1e] hover:bg-[#e85334]/15'
+                    )}
+                  >
+                    {custom || label}
+                  </button>
+                );
+              })}
+            </div>
+            {activeChip && chips.includes(activeChip) && (
+              <div className="mt-2.5 flex items-center gap-2">
+                <input
+                  autoFocus
+                  value={fills[activeChip] ?? ''}
+                  maxLength={80}
+                  placeholder={`Replace "${activeChip.replace(/^\[|\]$/g, '')}"…`}
+                  onChange={event => setFills({ ...fills, [activeChip]: event.target.value })}
+                  className="flex-1 rounded-xl border border-[#e85334]/35 bg-[#f8f9fb] px-3 py-2 text-xs text-[#181c24] placeholder:text-slate-400 focus:border-[#e85334] focus:bg-white focus:outline-none"
+                />
+                {fills[activeChip] && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = { ...fills };
+                      delete next[activeChip];
+                      setFills(next);
+                    }}
+                    className="rounded-xl border border-slate-900/10 bg-white px-2.5 py-2 text-xs font-medium text-[#6b7280] hover:text-[#181c24]"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         <div className="mt-3 border-t border-slate-900/[0.06] pt-3">
