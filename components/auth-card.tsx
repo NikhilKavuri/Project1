@@ -73,18 +73,20 @@ export function AuthCard({
   }
 
   return (
-    <BlurFade>
+    <BlurFade className={wide ? 'w-full md:w-auto' : undefined}>
       <div
         className={cn(
-          'mx-auto w-full overflow-hidden rounded-[28px] border border-slate-900/[0.08] bg-white shadow-[0_28px_70px_-18px_rgba(11,37,69,0.22)]',
-          wide ? 'max-w-[880px] md:grid md:grid-cols-12' : 'max-w-[420px]'
+          'mx-auto w-full overflow-hidden bg-white',
+          wide
+            ? 'flex min-h-screen flex-col md:grid md:min-h-0 md:max-w-[880px] md:grid-cols-12 md:rounded-[28px] md:border md:border-slate-900/[0.08] md:shadow-[0_28px_70px_-18px_rgba(11,37,69,0.22)]'
+            : 'max-w-[420px] rounded-[28px] border border-slate-900/[0.08] shadow-[0_28px_70px_-18px_rgba(11,37,69,0.22)]'
         )}
       >
         {/* Creative curved geometric header / left desktop panel */}
         <div
           className={cn(
             'relative overflow-hidden bg-[#f1f3f6]',
-            wide ? 'h-36 md:col-span-5 md:flex md:h-auto md:flex-col md:justify-between md:p-8' : 'h-40'
+            wide ? 'h-48 shrink-0 md:col-span-5 md:flex md:h-auto md:flex-col md:justify-between md:p-8' : 'h-40'
           )}
         >
           <div className="absolute -left-10 -top-12 h-48 w-56 rounded-full bg-[#e85334]" />
@@ -156,7 +158,7 @@ export function AuthCard({
           )}
         </div>
 
-        <div className={cn('px-7 pb-7 pt-3', wide && 'md:col-span-7 md:p-9')}>
+        <div className={cn('px-6 pb-8 pt-3', wide && 'flex flex-1 flex-col justify-center md:col-span-7 md:p-9')}>
           <div className={cn('text-center', wide && 'md:text-left')}>
             <h1 className="text-xl font-bold tracking-tight text-[#141518] sm:text-2xl">
               Clip<span className="text-[#e85334]">Spill</span>
