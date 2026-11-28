@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDownToLine, ArrowUpRight, Check, Clipboard, Lock, MessageSquare, Play, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpRight, Check, ChevronDown, ChevronUp, Clipboard, Lock, MessageSquare, Play, Sparkles, TrendingUp } from 'lucide-react';
 import { isLockedScript, type Angle, type Format, type Receipt, type ScriptItem } from '../lib/preview/types';
 import { BlurFade } from './magicui/blur-fade';
 import { MagicCard } from './magicui/magic-card';
@@ -58,6 +58,7 @@ export function ScriptCard({
   const [format, setFormat] = useState<Format>('Shorts');
   const [fills, setFills] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState('');
+  const [evidenceExpanded, setEvidenceExpanded] = useState(false);
 
   if (isLockedScript(script)) {
     return (
@@ -254,15 +255,33 @@ export function ScriptCard({
           </details>
         )}
 
-        <details open className="mt-3 border-t border-slate-900/[0.06] pt-3">
-          <summary className="flex cursor-pointer items-center justify-between text-xs font-semibold text-[#181c24]">
+        <div className="mt-3 border-t border-slate-900/[0.06] pt-3">
+          <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#181c24]">
             <span className="inline-flex items-center gap-1.5">
               <MessageSquare size={13} className="text-[#6c90b8]" />
               Evidence ({script.questions} questions · {script.likes} likes)
             </span>
-          </summary>
+            {script.receipts.length > 1 && (
+              <button
+                type="button"
+                aria-expanded={evidenceExpanded}
+                onClick={() => setEvidenceExpanded(prev => !prev)}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-900/10 bg-[#f8f9fb] px-2.5 py-1 text-[11px] font-medium text-[#181c24] transition hover:bg-[#eff1f4]"
+              >
+                {evidenceExpanded ? (
+                  <>
+                    Show less <ChevronUp size={12} />
+                  </>
+                ) : (
+                  <>
+                    +{script.receipts.length - 1} more <ChevronDown size={12} />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
           <ul className="mt-3 space-y-2">
-            {script.receipts.map(receipt => (
+            {(evidenceExpanded ? script.receipts : script.receipts.slice(0, 1)).map(receipt => (
               <li key={receipt.id} className="rounded-2xl bg-[#eff1f4] p-3 text-xs">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-[#181c24]">{receipt.author}</span>
@@ -282,7 +301,7 @@ export function ScriptCard({
               </li>
             ))}
           </ul>
-        </details>
+        </div>
 
         <details className="mt-3 border-t border-slate-900/[0.06] pt-3">
           <summary className="cursor-pointer text-xs font-semibold text-[#181c24]">
