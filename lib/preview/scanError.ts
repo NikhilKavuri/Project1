@@ -2,7 +2,7 @@ export class ScanError extends Error {
   constructor(message: string, readonly status: number) { super(message); }
 }
 
-export function providerConnectionError(provider: 'YouTube' | 'Gemini', error: unknown): ScanError {
+export function providerConnectionError(provider: 'YouTube' | 'AI service', error: unknown): ScanError {
   const cause = error instanceof Error ? error.cause as { code?: string } | undefined : undefined;
   if (cause?.code === 'ENOTFOUND' || cause?.code === 'EAI_AGAIN') {
     return new ScanError(`The ClipSpill server cannot resolve the ${provider} API hostname. Check the server’s DNS and outbound internet access.`, 503);

@@ -66,7 +66,7 @@ export async function discoverNicheAndPeers({
     }
   ) as { nicheLabel?: string; peerHandles?: unknown[] } | null;
   if (typeof parsed?.nicheLabel !== 'string' || !Array.isArray(parsed.peerHandles)) {
-    throw new ScanError('Gemini returned an incomplete creator discovery result. Try the scan again.', 502);
+    throw new ScanError('Could not finish creator discovery for this search. Try again.', 502);
   }
   const nicheLabel = (parsed.nicheLabel ?? query ?? 'Creator Niche').trim().slice(0, 60);
   const peerHandles = [...new Set(
