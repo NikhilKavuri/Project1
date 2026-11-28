@@ -293,7 +293,7 @@ export async function buildFullDigest(input: {
   const ownComments = channels.flatMap(channel => channel.comments)
     .filter(comment => comment.ownerReplied === false && isQuestion(comment.rawText))
     .sort((a, b) => b.likeCount - a.likeCount || b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, 180);
+    .slice(0, 90);
 
   const batch = makeBatch(ownComments);
   const topics = await clusterWithGemini(batch, process.env.GEMINI_API_KEY ?? '', process.env.GEMINI_MODEL);

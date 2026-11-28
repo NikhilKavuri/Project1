@@ -4,6 +4,8 @@ import { applyPreviewRedaction, getOrCreateUserState, readAppState, writeAppStat
 import { currentUser, isSupabaseConfigured } from '@/lib/supabase';
 import { normalizeHandle } from '@/lib/youtube/normalizeHandle';
 
+export const maxDuration = 60;
+
 const MAX_ANON_TRIES = 2;
 const anonCookie = 'clipspill-anon-scans';
 
