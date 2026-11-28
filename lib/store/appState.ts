@@ -30,6 +30,17 @@ export type UserAccountState = {
   lastSyncedAt: string | null;
   nextRunAt: string;
   digests: Digest[];
+  hijackQuestions?: Array<{
+    id: string;
+    topic: string;
+    author: string;
+    text: string;
+    likes: number;
+    url: string | null;
+    potentialScore?: number;
+    stealDeal?: boolean;
+    reason?: string;
+  }>;
 };
 
 export type PersistedAppState = {

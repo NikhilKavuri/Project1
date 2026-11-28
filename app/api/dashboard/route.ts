@@ -117,7 +117,8 @@ export async function POST(request: NextRequest) {
       ...userState,
       competitorHandles: discoveredPeers.length ? discoveredPeers : userState.competitorHandles,
       lastSyncedAt: new Date().toISOString(),
-      digests: [digest, ...userState.digests].slice(0, 20)
+      digests: [digest, ...userState.digests].slice(0, 20),
+      hijackQuestions
     };
     writeAppState(state);
     return Response.json({ hijackQuestions, digest, discoveredPeers, account: state.users[userId] });

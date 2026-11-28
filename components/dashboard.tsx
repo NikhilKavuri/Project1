@@ -96,6 +96,9 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
     setFrequencyHours(next.frequencyHours);
     setPreferredHourIst(next.preferredHourIst);
     setTriggerOnNewUpload(next.triggerOnNewUpload);
+    if (Array.isArray(next.hijackQuestions)) {
+      setHijackQuestions(next.hijackQuestions);
+    }
   }
 
   useEffect(() => {

@@ -130,9 +130,11 @@ export function ScriptCard({
             </h3>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#6b7280]">
               {script.topShortDna && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#eff1f4] px-2.5 py-1 text-[#181c24]">
-                  <TrendingUp size={11} className="text-[#6c90b8]" />
-                  Top-Short DNA: {script.topShortDna.title} ({script.topShortDna.views.toLocaleString()} views · {script.topShortDna.wpm} WPM)
+                <span className="inline-flex max-w-full items-start gap-1.5 rounded-2xl bg-[#eff1f4] px-3 py-1.5 text-[#181c24] sm:items-center sm:rounded-full sm:py-1">
+                  <TrendingUp size={12} className="mt-0.5 shrink-0 text-[#6c90b8] sm:mt-0" />
+                  <span className="break-words">
+                    Top-Short DNA: {script.topShortDna.title} ({script.topShortDna.views.toLocaleString()} views · {script.topShortDna.wpm} WPM)
+                  </span>
                 </span>
               )}
               {script.framework && (

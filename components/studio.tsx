@@ -412,7 +412,7 @@ export function Studio({
                   onClick={() => runScan(query, peers, true)}
                   className="inline-flex items-center gap-1 rounded-full bg-[#0b2545] px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-[#123663]"
                 >
-                  <Sparkles size={11} className="text-[#e85334]" /> Expand Niche (14d + More Peers)
+                  <Sparkles size={11} className="shrink-0 text-[#e85334]" /> Expand Niche (14d)
                 </button>
               )}
             </div>
