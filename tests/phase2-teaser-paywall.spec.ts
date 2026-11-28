@@ -65,3 +65,25 @@ test('teaser paywall unlocks Script #1 with receipts & sticker, redacts #2/#3 on
 
   expect(errors).toEqual([]);
 });
+
+test('independent IP credits allow a friend to scan the same channel even after first IP used its audit', async ({ request, playwright, baseURL }) => {
+  const firstFriend = await request.post('/api/preview', {
+    data: { reference: '@TestMotoChannel' },
+    headers: { 'x-forwarded-for': '203.0.113.10' }
+  });
+  expect(firstFriend.status()).toBe(200);
+
+  const firstFriendRepeat = await request.post('/api/preview', {
+    data: { reference: '@TestMotoChannel' },
+    headers: { 'x-forwarded-for': '203.0.113.10' }
+  });
+  expect(firstFriendRepeat.status()).toBe(402);
+
+  const friendContext = await playwright.request.newContext({ baseURL });
+  const secondFriend = await friendContext.post('/api/preview', {
+    data: { reference: '@TestMotoChannel' },
+    headers: { 'x-forwarded-for': '203.0.113.99' }
+  });
+  expect(secondFriend.status()).toBe(200);
+  await friendContext.dispose();
+});

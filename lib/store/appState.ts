@@ -23,6 +23,8 @@ export type UserAccountState = {
   triggerOnNewUpload: boolean;
   channelHandle: string;
   competitorHandles: string[];
+  instagramUrl?: string;
+  onboarded?: boolean;
   lastSyncedAt: string | null;
   nextRunAt: string;
   digests: Digest[];

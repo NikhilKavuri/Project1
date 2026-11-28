@@ -2,16 +2,19 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowLeft, ArrowUpRight, CalendarDays, Check, Clipboard, Cloud, History, Lock, MessageSquareReply, Radar, RefreshCw, Sparkles, UserRound } from 'lucide-react';
+import {
+  ArrowLeft, ArrowUpRight, CalendarDays, Check, Clipboard, History,
+  Instagram, LogOut, MessageSquareReply, Radar, RefreshCw, Sparkles, TrendingUp, Users
+} from 'lucide-react';
 import type { Digest } from '../lib/preview/types';
 import { isLockedScript } from '../lib/preview/types';
 import type { UserAccountState } from '../lib/store/appState';
+import { AuthCard } from './auth-card';
 import { AnimatedGradientText } from './magicui/animated-gradient-text';
 import { BentoGrid, BentoTile } from './magicui/bento-grid';
 import { BlurFade } from './magicui/blur-fade';
-import { BorderBeam } from './magicui/border-beam';
-import { DotPattern } from './magicui/dot-pattern';
 import { MagicCard } from './magicui/magic-card';
+import { NumberTicker } from './magicui/number-ticker';
 import { ShimmerButton } from './magicui/shimmer-button';
 import { Brand, Studio } from './studio';
 import { ScriptCard } from './script-card';
@@ -42,6 +45,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   const [state, setState] = useState<UserAccountState | null>(null);
   const [channelHandle, setChannelHandle] = useState('@TestMotoChannel');
   const [peers, setPeers] = useState('@JSFilmsIndia');
+  const [instagramUrl, setInstagramUrl] = useState('');
   const [frequencyHours, setFrequencyHours] = useState(48);
   const [preferredHourIst, setPreferredHourIst] = useState(9);
   const [triggerOnNewUpload, setTriggerOnNewUpload] = useState(false);
@@ -52,21 +56,16 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState('');
   const [copiedId, setCopiedId] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [editingOnboarding, setEditingOnboarding] = useState(false);
 
   function applyState(next: UserAccountState) {
     setState(next);
     setChannelHandle(next.channelHandle);
     setPeers(next.competitorHandles.join(', '));
+    setInstagramUrl(next.instagramUrl ?? '');
     setFrequencyHours(next.frequencyHours);
     setPreferredHourIst(next.preferredHourIst);
     setTriggerOnNewUpload(next.triggerOnNewUpload);
-  }
-
-  async function refreshDashboard() {
-    const data = await api('/api/dashboard');
-    applyState(data.account);
   }
 
   useEffect(() => {
@@ -86,6 +85,27 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
     }
     void boot();
   }, []);
+
+  async function submitOnboarding(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setStatus('');
+    try {
+      const data = await api('/api/dashboard', {
+        action: 'complete_onboarding',
+        channelHandle,
+        competitorHandles: peers.split(/[\s,]+/).filter(Boolean),
+        instagramUrl
+      });
+      applyState(data.account);
+      setEditingOnboarding(false);
+      setStatus('Creator profile saved!');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not save onboarding.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function saveSchedule(event: FormEvent) {
     event.preventDefault();
@@ -125,17 +145,11 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
     }
   }
 
-  async function auth(action: 'signin' | 'signup' | 'logout') {
+  async function logout() {
     setBusy(true);
-    setStatus('');
     try {
-      const result = await api('/api/account', action === 'logout' ? { action } : { action, email, password });
-      setAccount({ configured: result.configured, email: result.email });
-      setPassword('');
-      await refreshDashboard();
-      setStatus(result.email ? 'Signed in.' : action === 'logout' ? 'Signed out.' : result.message ?? 'Check your email.');
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Account request failed.');
+      await api('/api/account', { action: 'logout' });
+      window.location.href = '/';
     } finally {
       setBusy(false);
     }
@@ -148,6 +162,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   }
 
   const digests: Digest[] = state?.digests ?? [];
+  const totalScripts = digests.reduce((sum, d) => sum + d.scripts.length, 0);
   const quickReplies = digests.flatMap(d =>
     d.scripts.flatMap(s =>
       !isLockedScript(s)
@@ -157,7 +172,8 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   );
 
   const isUnlockedDashboard = Boolean(account.email) || testMode;
-  const inputCls = 'w-full rounded-xl border border-slate-900/10 bg-[#eff1f4] px-3.5 py-2.5 text-xs text-[#181c24] placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:bg-white focus:outline-none';
+  const needsOnboarding = Boolean(account.email) && !testMode && (!state?.onboarded || editingOnboarding);
+  const inputCls = 'w-full rounded-xl border border-slate-900/10 bg-[#f1f3f6] px-3.5 py-2.5 text-xs text-[#141518] placeholder:text-[#9ca3af] focus:border-[#0b2545] focus:bg-white focus:outline-none';
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
@@ -166,24 +182,31 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
           <div className="flex items-center gap-6">
             <Brand />
             <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm font-medium">
-              <Link href="/" className="pb-1 text-[#6b7280] transition hover:text-[#181c24]">Studio</Link>
-              <Link href="/dashboard" className="border-b-2 border-[#181c24] pb-1 text-[#181c24]">Dashboard</Link>
+              <Link href="/" className="pb-1 text-[#646975] transition hover:text-[#141518]">Studio</Link>
+              {isUnlockedDashboard && (
+                <Link href="/dashboard" className="border-b-2 border-[#141518] pb-1 text-[#141518]">Dashboard</Link>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            {isUnlockedDashboard && (
-              <span className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold',
-                state?.subscriptionStatus === 'ACTIVE'
-                  ? 'bg-gradient-to-r from-[#181c24] to-[#4f46e5] text-white'
-                  : 'bg-white text-[#6b7280]'
-              )}>
-                {state?.subscriptionStatus === 'ACTIVE' ? `Active · ${state.planTier}` : 'Free Tier'}
-              </span>
+            {isUnlockedDashboard && account.email && (
+              <>
+                <span className="hidden rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#646975] shadow-sm sm:inline-flex">
+                  {account.email}
+                </span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={logout}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-3.5 py-2 text-xs font-medium text-[#141518] shadow-sm transition hover:bg-slate-50"
+                >
+                  <LogOut size={13} /> Sign out
+                </button>
+              </>
             )}
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#181c24] shadow-sm transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#141518] shadow-sm transition hover:bg-slate-50"
             >
               <ArrowLeft size={14} /> Studio
             </Link>
@@ -191,93 +214,174 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
         </header>
 
         {status && (
-          <div className="mb-4 rounded-2xl bg-white/90 px-4 py-2.5 text-xs font-medium text-[#181c24] shadow-sm" role="status">
+          <div className="mb-4 rounded-2xl border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-medium text-[#141518] shadow-sm" role="status">
             {status}
           </div>
         )}
 
-        {!isUnlockedDashboard ? (
-          <BentoGrid>
-            <div className="md:col-span-7">
+        {!ready ? (
+          <BentoTile className="py-12 text-center text-xs text-[#646975]">Loading workspace…</BentoTile>
+        ) : !isUnlockedDashboard ? (
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-7">
               <Studio live embedded />
             </div>
+            <div className="lg:col-span-5">
+              <AuthCard onSuccess={() => window.location.reload()} />
+            </div>
+          </div>
+        ) : needsOnboarding ? (
+          <BlurFade>
+            <MagicCard className="mx-auto max-w-xl p-6 sm:p-8">
+              <AnimatedGradientText>
+                <Sparkles size={12} />
+                <span>Creator Setup</span>
+              </AnimatedGradientText>
+              <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#141518]">
+                Personalize your comment radar
+              </h1>
+              <p className="mt-1 text-xs text-[#646975]">
+                Tell us your channel and niche peers so we can surface unanswered viewer questions automatically.
+              </p>
 
-            <div className="md:col-span-5">
-              <BlurFade delay={0.05}>
-                <MagicCard className="relative p-6 sm:p-7">
-                  <BorderBeam duration={10} colorFrom="#e85334" colorTo="#6366f1" />
-                  <DotPattern className="opacity-30" />
-                  <div className="relative z-10">
-                    <AnimatedGradientText>
-                      <Lock size={12} className="text-[#e85334]" />
-                      <span>Creator Account</span>
-                    </AnimatedGradientText>
+              <form onSubmit={submitOnboarding} className="mt-6 space-y-4">
+                <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
+                  <span>Your YouTube Channel (@handle or URL)</span>
+                  <input
+                    className={inputCls}
+                    placeholder="@YourChannel"
+                    value={channelHandle}
+                    onChange={e => setChannelHandle(e.target.value)}
+                  />
+                </label>
 
-                    <h2 className="mt-4 text-xl font-bold tracking-tight text-[#181c24]">
-                      Sign in to unlock Dashboard
-                    </h2>
-                    <p className="mt-1 text-xs text-[#6b7280]">
-                      Save digests, configure 48h/72h/weekly auto-sync, and track competitors.
-                    </p>
+                <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
+                  <span>Competitor / Similar Niche Channels (up to 5)</span>
+                  <input
+                    className={inputCls}
+                    placeholder="@CreatorOne, @CreatorTwo"
+                    value={peers}
+                    onChange={e => setPeers(e.target.value)}
+                  />
+                </label>
 
-                    <div className="mt-5 space-y-3">
-                      <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
-                        <span>Email</span>
-                        <input
-                          className={inputCls}
-                          type="email"
-                          autoComplete="email"
-                          placeholder="you@creator.com"
-                          value={email}
-                          onChange={event => setEmail(event.target.value)}
-                        />
-                      </label>
-                      <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
-                        <span>Password</span>
-                        <input
-                          className={inputCls}
-                          type="password"
-                          autoComplete="current-password"
-                          placeholder="8+ characters"
-                          minLength={8}
-                          value={password}
-                          onChange={event => setPassword(event.target.value)}
-                        />
-                      </label>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        <ShimmerButton
-                          type="button"
-                          disabled={busy || !account.configured}
-                          onClick={() => auth('signin')}
-                          className="flex-1"
-                        >
-                          Sign in
-                        </ShimmerButton>
-                        <button
-                          type="button"
-                          disabled={busy || !account.configured}
-                          onClick={() => auth('signup')}
-                          className="rounded-full border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-semibold text-[#181c24] transition hover:bg-[#eff1f4]"
-                        >
-                          Create account
-                        </button>
+                <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
+                  <span>Instagram Profile Link (optional)</span>
+                  <input
+                    className={inputCls}
+                    placeholder="https://instagram.com/yourhandle"
+                    value={instagramUrl}
+                    onChange={e => setInstagramUrl(e.target.value)}
+                  />
+                </label>
+
+                <div className="rounded-2xl border border-slate-900/10 bg-[#f8f9fb] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e85334]/10 text-[#e85334]">
+                        <Instagram size={18} />
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold text-[#141518]">Instagram Creator Account</p>
+                        <p className="text-[11px] text-[#646975]">Connect Reels comments (Phase 2)</p>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setStatus('Instagram OAuth connection is scheduled for Phase 2.')}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/15 bg-white px-4 py-2 text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Instagram size={13} className="text-[#e85334]" /> Connect Instagram
+                    </button>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <ShimmerButton type="submit" disabled={busy} className="flex-1 bg-[#0b2545]">
+                    {busy ? 'Saving…' : 'Save & Open Dashboard'}
+                  </ShimmerButton>
+                  {state?.onboarded && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingOnboarding(false)}
+                      className="rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#646975]"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </MagicCard>
+          </BlurFade>
+        ) : (
+          <>
+            {/* Colorful KPI Overview Row */}
+            <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <BlurFade delay={0.02}>
+                <MagicCard className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#646975]">Scripts Unlocked</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#e85334]/10 text-[#e85334]">
+                      <Sparkles size={15} />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-[#141518]">
+                    <NumberTicker value={totalScripts} />
+                  </p>
+                </MagicCard>
+              </BlurFade>
+
+              <BlurFade delay={0.05}>
+                <MagicCard className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#646975]">Tracked Peers</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#0b2545]/10 text-[#0b2545]">
+                      <Users size={15} />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-[#141518]">
+                    <NumberTicker value={state?.competitorHandles.length ?? 0} />
+                  </p>
+                </MagicCard>
+              </BlurFade>
+
+              <BlurFade delay={0.08}>
+                <MagicCard className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#646975]">Cadence</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                      <TrendingUp size={15} />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-[#141518]">
+                    {frequencyHours === 48 ? 'Every 2d' : frequencyHours === 72 ? 'Every 3d' : 'Weekly'}
+                  </p>
+                </MagicCard>
+              </BlurFade>
+
+              <BlurFade delay={0.11}>
+                <MagicCard className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-[#646975]">Plan Status</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-xl bg-indigo-500/10 text-indigo-600">
+                      <CalendarDays size={15} />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-[#141518]">
+                    {state?.subscriptionStatus === 'ACTIVE' ? `Active · ${state.planTier}` : 'Unlocked Creator'}
+                  </p>
                 </MagicCard>
               </BlurFade>
             </div>
-          </BentoGrid>
-        ) : (
-          <>
+
             <BentoGrid>
               <BlurFade delay={0.03} className="md:col-span-7">
                 <BentoTile>
-                  <h1 className="inline-flex items-center gap-2 text-base font-semibold text-[#181c24]">
+                  <h1 className="inline-flex items-center gap-2 text-base font-semibold text-[#141518]">
                     <CalendarDays size={16} className="text-[#e85334]" /> Schedule &amp; Competitor Spy
                   </h1>
                   <form className="mt-4 space-y-4" onSubmit={saveSchedule}>
-                    <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
+                    <label className="grid gap-1 text-xs font-medium text-[#646975]">
                       <span>Your YouTube channel</span>
                       <input
                         className={inputCls}
@@ -287,7 +391,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                         onChange={event => setChannelHandle(event.target.value)}
                       />
                     </label>
-                    <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
+                    <label className="grid gap-1 text-xs font-medium text-[#646975]">
                       <span>Competitor handles (up to 5)</span>
                       <input
                         aria-label="Competitor handles"
@@ -300,7 +404,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                     </label>
 
                     <div className="space-y-1.5">
-                      <span className="block text-xs font-medium text-[#6b7280]">Delivery cadence</span>
+                      <span className="block text-xs font-medium text-[#646975]">Delivery cadence</span>
                       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Delivery cadence">
                         {CADENCES.map(option => {
                           const active = frequencyHours === option.value;
@@ -313,8 +417,8 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                               className={cn(
                                 'rounded-full border px-3.5 py-2 text-xs font-semibold transition-all',
                                 active
-                                  ? 'border-transparent bg-gradient-to-r from-[#181c24] to-[#4f46e5] text-white shadow-sm'
-                                  : 'border-slate-900/10 bg-[#eff1f4] text-[#6b7280] hover:text-[#181c24]'
+                                  ? 'border-transparent bg-[#0b2545] text-white shadow-sm'
+                                  : 'border-slate-900/10 bg-[#f1f3f6] text-[#646975] hover:text-[#141518]'
                               )}
                             >
                               {option.label}
@@ -325,7 +429,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                     </div>
 
                     <div className="space-y-1.5">
-                      <span className="block text-xs font-medium text-[#6b7280]">Preferred hour (IST)</span>
+                      <span className="block text-xs font-medium text-[#646975]">Preferred hour (IST)</span>
                       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Preferred hour IST">
                         {HOURS_IST.map(h => {
                           const active = preferredHourIst === h;
@@ -339,8 +443,8 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                               className={cn(
                                 'rounded-full border px-3 py-1.5 text-xs font-semibold transition-all',
                                 active
-                                  ? 'border-transparent bg-[#181c24] text-white shadow-sm'
-                                  : 'border-slate-900/10 bg-[#eff1f4] text-[#6b7280] hover:text-[#181c24]'
+                                  ? 'border-transparent bg-[#e85334] text-white shadow-sm'
+                                  : 'border-slate-900/10 bg-[#f1f3f6] text-[#646975] hover:text-[#141518]'
                               )}
                             >
                               {label}
@@ -355,12 +459,12 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                       role="switch"
                       aria-checked={triggerOnNewUpload}
                       onClick={() => setTriggerOnNewUpload(!triggerOnNewUpload)}
-                      className="flex w-full items-center justify-between rounded-2xl bg-[#eff1f4] px-3.5 py-2.5 text-xs font-medium text-[#181c24] transition hover:bg-slate-200/70"
+                      className="flex w-full items-center justify-between rounded-2xl bg-[#f1f3f6] px-3.5 py-2.5 text-xs font-medium text-[#141518] transition hover:bg-slate-200/70"
                     >
                       <span>Auto-trigger 24h after any new video upload</span>
                       <span className={cn(
                         'grid h-5 w-9 items-center rounded-full p-0.5 transition-colors',
-                        triggerOnNewUpload ? 'bg-[#6366f1]' : 'bg-slate-300'
+                        triggerOnNewUpload ? 'bg-[#e85334]' : 'bg-slate-300'
                       )}>
                         <span className={cn(
                           'h-4 w-4 rounded-full bg-white shadow transition-transform',
@@ -377,7 +481,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                         type="button"
                         disabled={busy}
                         onClick={runDeltaSpy}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#181c24] transition hover:bg-[#eff1f4]"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#141518] transition hover:bg-[#f1f3f6]"
                       >
                         <RefreshCw size={13} className={cn(busy && 'animate-spin')} /> Sync Competitor Spy
                       </button>
@@ -387,66 +491,44 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
               </BlurFade>
 
               <BlurFade delay={0.07} className="md:col-span-5">
-                <BentoTile>
-                  <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[#181c24]">
-                    <Cloud size={16} className="text-[#6366f1]" /> Cloud Sync
-                  </h2>
-                  {!ready ? (
-                    <p className="mt-3 text-xs text-[#6b7280]">Checking session…</p>
-                  ) : account.email ? (
-                    <div className="mt-4 space-y-3">
-                      <p className="inline-flex items-center gap-1.5 text-xs font-medium text-[#181c24]">
-                        <UserRound size={14} /> {account.email}
-                      </p>
-                      <div>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => auth('logout')}
-                          className="rounded-full border border-slate-900/10 bg-[#eff1f4] px-4 py-2 text-xs font-medium text-[#181c24] hover:bg-slate-200"
-                        >
-                          Sign out
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
-                        <span>Email</span>
-                        <input
-                          className={inputCls}
-                          type="email"
-                          autoComplete="email"
-                          value={email}
-                          onChange={event => setEmail(event.target.value)}
-                        />
-                      </label>
-                      <label className="grid gap-1 text-xs font-medium text-[#6b7280]">
-                        <span>Password</span>
-                        <input
-                          className={inputCls}
-                          type="password"
-                          autoComplete="current-password"
-                          minLength={8}
-                          value={password}
-                          onChange={event => setPassword(event.target.value)}
-                        />
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        <ShimmerButton type="button" disabled={busy || !account.configured} onClick={() => auth('signin')}>
-                          Sign in
-                        </ShimmerButton>
-                        <button
-                          type="button"
-                          disabled={busy || !account.configured}
-                          onClick={() => auth('signup')}
-                          className="rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#181c24] hover:bg-[#eff1f4]"
-                        >
-                          Create account
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <BentoTile className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="inline-flex items-center gap-2 text-base font-semibold text-[#141518]">
+                      <Instagram size={16} className="text-[#e85334]" /> Connected Accounts
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setEditingOnboarding(true)}
+                      className="text-xs font-semibold text-[#0b2545] underline-offset-2 hover:underline"
+                    >
+                      Edit setup
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#f1f3f6] p-4 text-xs">
+                    <p className="font-semibold text-[#141518]">Instagram Creator</p>
+                    <p className="mt-1 text-[#646975]">
+                      {instagramUrl ? instagramUrl : 'Optional link not added yet.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setStatus('Instagram OAuth connection is scheduled for Phase 2.')}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#141518] px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <Instagram size={13} className="text-[#e85334]" /> Connect Instagram Account
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-900/10 bg-white p-4 text-xs">
+                    <p className="font-semibold text-[#141518]">Quick Scan</p>
+                    <p className="mt-1 text-[#646975]">Run an instant scan in Studio with all 3 scripts unlocked.</p>
+                    <Link
+                      href="/"
+                      className="mt-3 inline-flex items-center gap-1 font-semibold text-[#e85334] hover:underline"
+                    >
+                      Open Studio <ArrowUpRight size={13} />
+                    </Link>
+                  </div>
                 </BentoTile>
               </BlurFade>
             </BentoGrid>
@@ -458,7 +540,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                   onClick={() => setTab('scripts')}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition',
-                    tab === 'scripts' ? 'bg-[#181c24] text-white' : 'bg-white text-[#6b7280] hover:text-[#181c24]'
+                    tab === 'scripts' ? 'bg-[#0b2545] text-white' : 'bg-white text-[#646975] hover:text-[#141518]'
                   )}
                 >
                   <History size={13} /> Scripts &amp; Digests ({digests.length})
@@ -468,7 +550,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                   onClick={() => setTab('spy')}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition',
-                    tab === 'spy' ? 'bg-[#181c24] text-white' : 'bg-white text-[#6b7280] hover:text-[#181c24]'
+                    tab === 'spy' ? 'bg-[#0b2545] text-white' : 'bg-white text-[#646975] hover:text-[#141518]'
                   )}
                 >
                   <Radar size={13} /> Competitor Spy ({hijackQuestions.length})
@@ -478,7 +560,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                   onClick={() => setTab('replies')}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition',
-                    tab === 'replies' ? 'bg-[#181c24] text-white' : 'bg-white text-[#6b7280] hover:text-[#181c24]'
+                    tab === 'replies' ? 'bg-[#0b2545] text-white' : 'bg-white text-[#646975] hover:text-[#141518]'
                   )}
                 >
                   <MessageSquareReply size={13} /> Quick-Reply Cheat Sheet ({quickReplies.length})
@@ -487,7 +569,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
 
               {tab === 'scripts' && (
                 !digests.length ? (
-                  <BentoTile className="text-xs text-[#6b7280]">
+                  <BentoTile className="text-xs text-[#646975]">
                     No saved digests yet. Run a scan or click Sync Competitor Spy.
                   </BentoTile>
                 ) : (
@@ -500,11 +582,11 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                           onClick={() => setOpen(open === index ? -1 : index)}
                           className="flex w-full items-center justify-between text-left"
                         >
-                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#181c24]">
+                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#141518]">
                             <Sparkles size={14} className="text-[#e85334]" />
                             {item.niche}
                           </span>
-                          <span className="text-xs text-[#6b7280]">
+                          <span className="text-xs text-[#646975]">
                             {new Date(item.createdAt).toLocaleDateString()} · {item.scripts.length} scripts
                           </span>
                         </button>
@@ -522,14 +604,14 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
               {tab === 'spy' && (
                 <BentoTile>
                   {!hijackQuestions.length ? (
-                    <p className="text-xs text-[#6b7280]">Click Sync Competitor Spy above to fetch unanswered competitor viewer questions.</p>
+                    <p className="text-xs text-[#646975]">Click Sync Competitor Spy above to fetch unanswered competitor viewer questions.</p>
                   ) : (
                     <div className="space-y-2.5">
                       {hijackQuestions.map(q => (
-                        <div key={q.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#eff1f4] p-3.5 text-xs">
+                        <div key={q.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f1f3f6] p-3.5 text-xs">
                           <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-[#181c24]">{q.author}</span>
-                            <span className="ml-2 text-[#6b7280]">· {q.topic}</span>
+                            <span className="font-semibold text-[#141518]">{q.author}</span>
+                            <span className="ml-2 text-[#646975]">· {q.topic}</span>
                             <p className="mt-1 text-[#4b5563]">{q.text}</p>
                           </div>
                           {q.url && (
@@ -537,7 +619,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                               href={q.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#181c24] px-3.5 py-1.5 font-medium text-white hover:bg-slate-800"
+                              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#141518] px-3.5 py-1.5 font-medium text-white hover:bg-slate-800"
                             >
                               Direct Comment-Hijack Link <ArrowUpRight size={12} />
                             </a>
@@ -552,21 +634,21 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
               {tab === 'replies' && (
                 <BentoTile>
                   {!quickReplies.length ? (
-                    <p className="text-xs text-[#6b7280]">Generate or sync a digest to populate your Quick-Reply Cheat Sheet.</p>
+                    <p className="text-xs text-[#646975]">Generate or sync a digest to populate your Quick-Reply Cheat Sheet.</p>
                   ) : (
                     <div className="space-y-2.5">
                       {quickReplies.map(item => (
-                        <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#eff1f4] p-3.5 text-xs">
+                        <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f1f3f6] p-3.5 text-xs">
                           <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-[#181c24]">{item.author}:</span>{' '}
+                            <span className="font-semibold text-[#141518]">{item.author}:</span>{' '}
                             <span className="text-[#4b5563]">{item.question}</span>
-                            <p className="mt-1 font-medium text-[#181c24]">{item.reply}</p>
+                            <p className="mt-1 font-medium text-[#141518]">{item.reply}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => copyReply(item.id, item.reply)}
-                              className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 font-medium text-[#181c24] shadow-sm hover:bg-slate-50"
+                              className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 font-medium text-[#141518] shadow-sm hover:bg-slate-50"
                             >
                               {copiedId === item.id ? <Check size={12} /> : <Clipboard size={12} />}
                               {copiedId === item.id ? 'Copied' : 'Copy'}
@@ -576,7 +658,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-full bg-[#181c24] px-3 py-1.5 font-medium text-white hover:bg-slate-800"
+                                className="inline-flex items-center gap-1 rounded-full bg-[#141518] px-3 py-1.5 font-medium text-white hover:bg-slate-800"
                               >
                                 Reply on YouTube <ArrowUpRight size={12} />
                               </a>

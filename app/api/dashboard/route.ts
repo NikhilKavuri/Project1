@@ -31,6 +31,28 @@ export async function POST(request: NextRequest) {
   const userState = getOrCreateUserState(userId, email);
   const state = readAppState();
 
+  if (body.action === 'complete_onboarding') {
+    const channelHandle = typeof body.channelHandle === 'string' ? body.channelHandle.trim() : '';
+    const instagramUrl = typeof body.instagramUrl === 'string' ? body.instagramUrl.trim().slice(0, 300) : '';
+    const competitorHandles: string[] = Array.isArray(body.competitorHandles)
+      ? body.competitorHandles
+        .map((h: unknown) => normalizeHandle(String(h)))
+        .filter((r: ReturnType<typeof normalizeHandle>): r is { kind: 'handle'; value: string } => r?.kind === 'handle')
+        .map((r: { kind: 'handle'; value: string }) => r.value)
+        .slice(0, 5)
+      : [];
+
+    state.users[userId] = {
+      ...userState,
+      channelHandle: channelHandle || userState.channelHandle,
+      competitorHandles,
+      instagramUrl,
+      onboarded: true
+    };
+    writeAppState(state);
+    return Response.json({ account: state.users[userId] });
+  }
+
   if (body.action === 'save_schedule') {
     const frequencyHours = [48, 72, 168].includes(Number(body.frequencyHours)) ? Number(body.frequencyHours) : 48;
     const preferredHourIst = Math.min(23, Math.max(0, Number(body.preferredHourIst ?? 9)));

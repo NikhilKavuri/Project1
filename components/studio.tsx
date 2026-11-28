@@ -312,10 +312,10 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link
-                href="/dashboard"
+                href="/login"
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#e85334] px-5 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-[#d64527]"
               >
-                Sign in &amp; Upgrade <ArrowUpRight size={14} />
+                Sign in to Unlock <ArrowUpRight size={14} />
               </Link>
             </div>
           </motion.div>
@@ -617,22 +617,16 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
         <section className="relative overflow-hidden bg-[#f1f3f6] pb-20 text-[#141518] sm:pb-28">
           <div className="mx-auto max-w-[1220px] px-4 pt-5 sm:px-6 md:px-10">
             <header className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-6 sm:gap-8">
-                <Brand />
-                <nav aria-label="Main navigation" className="hidden items-center gap-6 text-sm font-medium sm:flex">
-                  <Link href="/" className="text-[#141518]">Studio</Link>
-                  <Link href="/dashboard" className="text-[#646975] transition hover:text-[#141518]">Dashboard</Link>
-                </nav>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="hidden rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-medium text-[#141518] sm:inline-flex">
+              <Brand />
+              <div className="flex items-center gap-2.5">
+                <span className="rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-medium text-[#141518]">
                   {remainingTries}/2 free scans left
                 </span>
                 <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-3.5 py-2 text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-slate-50 sm:px-4"
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2545] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#123663]"
                 >
-                  <LayoutDashboard size={14} className="text-[#e85334]" /> Log In
+                  Log In
                 </Link>
               </div>
             </header>
@@ -747,16 +741,18 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
             <Brand />
             <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm font-medium">
               <Link href="/" className="border-b-2 border-[#141518] pb-1 text-[#141518]">Studio</Link>
-              <Link href="/dashboard" className="pb-1 text-[#646975] transition hover:text-[#141518]">Dashboard</Link>
+              {loggedIn && (
+                <Link href="/dashboard" className="pb-1 text-[#646975] transition hover:text-[#141518]">Dashboard</Link>
+              )}
             </nav>
           </div>
 
           <Link
-            href="/dashboard"
+            href={loggedIn ? '/dashboard' : '/login'}
             className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-slate-50"
           >
             <LayoutDashboard size={14} className="text-[#e85334]" />
-            <span>{loggedIn ? 'Dashboard' : 'Sign in'}</span>
+            <span>{loggedIn ? 'Dashboard' : 'Log In'}</span>
           </Link>
         </header>
 

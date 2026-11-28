@@ -1,19 +1,37 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { buildFullDigest, ScanError, takeScanSlot } from '@/lib/preview/live';
 import { applyPreviewRedaction, getOrCreateUserState, readAppState, writeAppState } from '@/lib/store/appState';
 import { currentUser, isSupabaseConfigured } from '@/lib/supabase';
 import { normalizeHandle } from '@/lib/youtube/normalizeHandle';
 
 const MAX_ANON_TRIES = 2;
+const anonCookie = 'clipspill-anon-scans';
 
 function getClientIp(request: NextRequest) {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')?.trim()
+    || '127.0.0.1';
+}
+
+function getAnonCookieState(request: NextRequest): { count: number; channels: string[] } {
+  try {
+    const raw = request.cookies.get(anonCookie)?.value;
+    if (!raw) return { count: 0, channels: [] };
+    const parsed = JSON.parse(raw) as { count?: number; channels?: string[] };
+    return {
+      count: Number.isFinite(parsed.count) ? Number(parsed.count) : 0,
+      channels: Array.isArray(parsed.channels) ? parsed.channels.slice(0, 10) : []
+    };
+  } catch {
+    return { count: 0, channels: [] };
+  }
 }
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
   const state = readAppState();
-  const used = state.ipScans[ip] ?? 0;
+  const cookieState = getAnonCookieState(request);
+  const used = Math.max(state.ipScans[ip] ?? 0, cookieState.count);
   return Response.json({
     maxTries: MAX_ANON_TRIES,
     usedTries: used,
@@ -75,22 +93,28 @@ async function handlePreview({
   const normalized = reference ? normalizeHandle(reference) : null;
   const channelKey = (normalized?.value ?? topic).toLowerCase();
   const ip = getClientIp(request);
+  const lockKey = `${ip}::${channelKey}`;
 
   const state = readAppState();
+  const cookieState = getAnonCookieState(request);
   const userState = userId ? getOrCreateUserState(userId) : null;
-  const isPaid = userState?.subscriptionStatus === 'ACTIVE';
-  const enforceLocks = process.env.CLIPSPILL_ENGINE_TEST === '1' || process.env.ENFORCE_PAYWALL === 'true';
-  const ipUsed = state.ipScans[ip] ?? 0;
+  const enforceLocks = process.env.NODE_ENV === 'production'
+    || process.env.CLIPSPILL_ENGINE_TEST === '1'
+    || process.env.ENFORCE_PAYWALL === 'true';
 
-  if (enforceLocks && !isPaid && !userId) {
-    if (state.previewLocks[channelKey]) {
-      const lock = state.previewLocks[channelKey];
+  const ipUsed = Math.max(state.ipScans[ip] ?? 0, cookieState.count);
+  const channelLockedForIp = Boolean(state.previewLocks[lockKey]) || cookieState.channels.includes(channelKey);
+
+  // Anonymous users: enforce per-(IP, channel) lock and 2-try IP cap
+  if (enforceLocks && !userId) {
+    if (channelLockedForIp) {
+      const lock = state.previewLocks[lockKey];
       return Response.json(
         {
-          error: '1-Time Free Audit Used — Unlock Automatic Delivery',
+          error: '1-Time Free Audit Used — Sign in to Unlock All Scripts',
           code: 'PREVIEW_ALREADY_USED',
           channelHandle: normalized?.value ?? topic,
-          newCommentCount: lock.fullScripts.reduce((sum, s) => sum + s.questions, 0) + 4,
+          newCommentCount: lock ? lock.fullScripts.reduce((sum, s) => sum + s.questions, 0) + 4 : 4,
           remainingTries: Math.max(0, MAX_ANON_TRIES - ipUsed)
         },
         { status: 402 }
@@ -99,7 +123,7 @@ async function handlePreview({
     if (ipUsed >= MAX_ANON_TRIES) {
       return Response.json(
         {
-          error: '2 Free Studio Tries Used — Sign in or Upgrade to Continue',
+          error: '2 Free Studio Tries Used — Sign in to Continue',
           code: 'PREVIEW_ALREADY_USED',
           channelHandle: normalized?.value ?? topic,
           newCommentCount: 0,
@@ -112,8 +136,9 @@ async function handlePreview({
 
   const { digest, fullScripts } = await buildFullDigest({ reference, topic, peers, userId });
 
-  if (!enforceLocks || (isPaid && userState)) {
-    if (isPaid && userState) {
+  // Logged-in users (or non-enforced local dev) get all 3 scripts unlocked
+  if (userId || !enforceLocks) {
+    if (userId && userState) {
       const latestState = readAppState();
       latestState.users[userState.userId].digests = [digest, ...latestState.users[userState.userId].digests].slice(0, 20);
       writeAppState(latestState);
@@ -123,20 +148,34 @@ async function handlePreview({
 
   const redactedScripts = applyPreviewRedaction(fullScripts);
   const latestState = readAppState();
-  latestState.previewLocks[channelKey] = {
+  latestState.previewLocks[lockKey] = {
     channelKey,
     ip,
     digestId: digest.id,
     fullScripts,
     createdAt: new Date().toISOString()
   };
-  latestState.ipScans[ip] = (latestState.ipScans[ip] ?? 0) + 1;
+  latestState.ipScans[ip] = ipUsed + 1;
   writeAppState(latestState);
 
-  return Response.json({
+  const nextUsed = latestState.ipScans[ip];
+  const response = NextResponse.json({
     ...digest,
     scripts: redactedScripts,
     previewUsed: true,
-    remainingTries: Math.max(0, MAX_ANON_TRIES - latestState.ipScans[ip])
+    remainingTries: Math.max(0, MAX_ANON_TRIES - nextUsed)
   });
+
+  response.cookies.set(
+    anonCookie,
+    JSON.stringify({ count: nextUsed, channels: [...new Set([...cookieState.channels, channelKey])].slice(0, 10) }),
+    {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: (process.env.SITE_URL ?? request.url).startsWith('https:'),
+      path: '/',
+      maxAge: 30 * 86_400
+    }
+  );
+  return response;
 }
