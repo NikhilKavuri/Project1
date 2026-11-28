@@ -16,14 +16,14 @@ test('dashboard persists schedule, runs competitor spy delta sync, and switches 
 
   // Change cadence to Weekly then back to 48h at 09:00 IST using Magic UI pill selectors, save, reload, and verify persistence
   await page.getByRole('button', { name: 'Weekly (7d)' }).click();
-  await page.getByRole('button', { name: /Save schedule/i }).click();
-  await expect(page.getByText('Schedule saved.')).toBeVisible();
+  await page.getByRole('button', { name: /Save changes/i }).click();
+  await expect(page.getByText('Changes saved!')).toBeVisible();
 
   await page.getByRole('button', { name: 'Every 2 Days (48h)' }).click();
   await page.getByRole('button', { name: '09:00 IST' }).click();
   await page.getByLabel('Competitor handles').fill('@JSFilmsIndia, @BikerNiladri');
-  await page.getByRole('button', { name: /Save schedule/i }).click();
-  await expect(page.getByText('Schedule saved.')).toBeVisible();
+  await page.getByRole('button', { name: /Save changes/i }).click();
+  await expect(page.getByText('Changes saved!')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('button', { name: 'Every 2 Days (48h)' })).toHaveAttribute('aria-pressed', 'true');

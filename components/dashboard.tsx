@@ -18,6 +18,7 @@ import { NumberTicker } from './magicui/number-ticker';
 import { ShimmerButton } from './magicui/shimmer-button';
 import { Brand, Studio } from './studio';
 import { ScriptCard } from './script-card';
+import { SnackbarHost, type ToastItem } from './ui/snackbar';
 import { cn } from '@/lib/utils';
 
 type Account = { configured: boolean; email: string | null };
@@ -56,9 +57,23 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   const [open, setOpen] = useState(0);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState('');
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [copiedId, setCopiedId] = useState('');
   const [editingOnboarding, setEditingOnboarding] = useState(false);
+
+  function notify(message: string, tone: ToastItem['tone'] = 'info') {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setToasts(prev => [...prev.slice(-3), { id, message, tone }]);
+  }
+
+  function dismissToast(id: string) {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }
+
+  const setStatus = (msg: string, tone?: ToastItem['tone']) => {
+    if (!msg) return;
+    notify(msg, tone ?? (/fail|could not|error/i.test(msg) ? 'error' : /saved|synced|copied/i.test(msg) ? 'success' : 'info'));
+  };
 
   function applyState(next: UserAccountState) {
     setState(next);
@@ -82,7 +97,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
         setAccount(acct);
         applyState(dash.account);
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : 'Could not load dashboard.');
+        notify(error instanceof Error ? error.message : 'Could not load dashboard.', 'error');
       } finally {
         setReady(true);
       }
@@ -127,9 +142,9 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
         triggerOnNewUpload
       });
       applyState(data.account);
-      setStatus('Schedule saved.');
+      setStatus('Changes saved!', 'success');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not save schedule.');
+      setStatus(error instanceof Error ? error.message : 'Could not save changes.', 'error');
     } finally {
       setBusy(false);
     }
@@ -164,6 +179,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   async function copyReply(id: string, text: string) {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
+    notify('Reply copied to clipboard', 'success');
     setTimeout(() => setCopiedId(''), 1500);
   }
 
@@ -222,12 +238,6 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
             )}
           </div>
         </header>
-
-        {status && (
-          <div className="mb-4 rounded-2xl border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-medium text-[#141518] shadow-sm" role="status">
-            {status}
-          </div>
-        )}
 
         {!ready ? (
           <BentoTile className="py-12 text-center text-xs text-[#646975]">Loading workspace…</BentoTile>
@@ -509,7 +519,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
 
                     <div className="flex flex-wrap gap-2 pt-1">
                       <ShimmerButton type="submit" disabled={busy}>
-                        Save schedule
+                        Save changes
                       </ShimmerButton>
                       <button
                         type="button"
@@ -708,6 +718,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
           </>
         )}
       </div>
+      <SnackbarHost toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

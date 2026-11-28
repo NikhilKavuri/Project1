@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Bookmark, Clapperboard, LayoutDashboard, Lock, MessageSquareText, Plus, Search, Sparkles, TrendingUp, X } from 'lucide-react';
 import { demoDigest } from '../lib/preview/demo';
@@ -13,6 +13,7 @@ import { BlurFade } from './magicui/blur-fade';
 import { NumberTicker } from './magicui/number-ticker';
 import { ShimmerButton } from './magicui/shimmer-button';
 import { ScriptCard } from './script-card';
+import { SnackbarHost, type ToastItem } from './ui/snackbar';
 import { cn } from '@/lib/utils';
 
 export function Brand({ inverted = false }: { inverted?: boolean }) {
@@ -116,9 +117,32 @@ export function Studio({
   const [locationLabel, setLocationLabel] = useState('');
   const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessageState] = useState('');
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [remainingTries, setRemainingTries] = useState<number>(2);
   const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
+  const runScanRef = useRef<(targetQuery: string, targetPeers: string[]) => Promise<void>>();
+
+  function notify(text: string, tone: ToastItem['tone'] = 'info') {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setToasts(prev => [...prev.slice(-3), { id, message: text, tone }]);
+  }
+
+  function dismissToast(id: string) {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }
+
+  function setMessage(text: string) {
+    setMessageState(text);
+    if (text) {
+      const tone: ToastItem['tone'] = /could not|enter|already|up to|fail/i.test(text)
+        ? 'error'
+        : /saved|ready/i.test(text)
+          ? 'success'
+          : 'info';
+      notify(text, tone);
+    }
+  }
   const [paywallModal, setPaywallModal] = useState<{ open: boolean; handle: string; newComments: number }>({
     open: false,
     handle: '',
@@ -157,7 +181,7 @@ export function Studio({
                 setDigest(dash.account.digests[0]);
                 setSelected(0);
               } else if (handle && !embedded && live) {
-                void runScan(handle, savedPeers);
+                void runScanRef.current?.(handle, savedPeers);
               }
             }
           }
@@ -243,12 +267,15 @@ export function Studio({
       setInspection(null);
       setDigest(payload as Digest);
       setSelected(0);
+      notify(`Loaded ${(payload as Digest).scripts?.length ?? 0} scripts`, 'success');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Scan could not finish.');
     } finally {
       setBusy(false);
     }
   }
+
+  runScanRef.current = runScan;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -843,6 +870,7 @@ export function Studio({
         </section>
 
         {modal}
+        <SnackbarHost toasts={toasts} onDismiss={dismissToast} />
       </div>
     );
   }
@@ -970,6 +998,7 @@ export function Studio({
         {scanResultsSection}
       </div>
       {modal}
+      <SnackbarHost toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
