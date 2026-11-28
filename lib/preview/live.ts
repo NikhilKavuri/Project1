@@ -39,11 +39,11 @@ export function takeScanSlot() {
   if (++operations > 10) throw new ScanError('Scan rate limit reached. Try again in a minute.', 429);
 }
 
-function scanChannel(reference: string): Promise<ChannelData | null> {
+function scanChannel(reference: string, lookbackHours = 72, maxVideos = 3): Promise<ChannelData | null> {
   if (process.env.MOCK_YOUTUBE_API === 'true') {
     return Promise.resolve(getMockChannelFixture(reference));
   }
-  const key = reference.toLowerCase();
+  const key = `${reference.toLowerCase()}|${lookbackHours}|${maxVideos}`;
   const previous = cache.get(key);
   if (previous && previous.expires > Date.now()) return previous.task;
   youtube ??= new YouTubeClient(process.env.YOUTUBE_API_KEY ?? '');
@@ -52,9 +52,9 @@ function scanChannel(reference: string): Promise<ChannelData | null> {
     const creator = await client.resolve(reference);
     if (!creator) return null;
     const uploads = await client.uploads(creator);
-    const since = new Date(Date.now() - 72 * 3_600_000);
+    const since = new Date(Date.now() - lookbackHours * 3_600_000);
     const [batches, stats] = await Promise.all([
-      Promise.all(uploads.slice(0, 3).map(upload => client.comments(creator, upload, since))),
+      Promise.all(uploads.slice(0, maxVideos).map(upload => client.comments(creator, upload, since))),
       client.videoStats(uploads.map(u => u.id)).catch(() => [])
     ]);
     const subs = Math.max(creator.subscriberCount ?? 1000, 1);
@@ -124,12 +124,15 @@ export async function buildFullDigest(input: {
   peers: string[];
   userId?: string;
   location?: string;
-}): Promise<{ digest: Digest; fullScripts: Script[]; channelKey: string; newCommentCount: number }> {
-  const own = input.reference ? await scanChannel(input.reference) : null;
+  expand?: boolean;
+}): Promise<{ digest: Digest; fullScripts: Script[]; channelKey: string; newCommentCount: number; discoveredPeers: string[] }> {
+  const lookbackHours = input.expand ? 336 : 72;
+  const maxVideos = input.expand ? 6 : 3;
+  const own = input.reference ? await scanChannel(input.reference, lookbackHours, maxVideos) : null;
   if (input.reference && !own && process.env.MOCK_YOUTUBE_API !== 'true') {
     throw new ScanError(`Could not find YouTube channel "${input.reference}". Check the @handle spelling.`, 404);
   }
-  let peers = input.peers;
+  let peers = [...input.peers];
   let nicheLabel = input.topic?.trim() || 'Creator Niche';
 
   if (process.env.MOCK_YOUTUBE_API === 'true') {
@@ -173,6 +176,7 @@ export async function buildFullDigest(input: {
       return {
         channelKey: fixture.creator.handle.toLowerCase(),
         newCommentCount: ownQuestions.length || 3,
+        discoveredPeers: peers,
         fullScripts: scripts,
         digest: {
           id,
@@ -216,6 +220,7 @@ export async function buildFullDigest(input: {
     return {
       channelKey: fixture.creator.handle.toLowerCase(),
       newCommentCount: ownQuestions.length,
+      discoveredPeers: peers,
       fullScripts: scripts,
       digest: {
         id,
@@ -235,14 +240,16 @@ export async function buildFullDigest(input: {
     };
   }
 
-  if ((!own || needsPeers(own)) && !peers.length) {
+  if (((!own || needsPeers(own)) && !peers.length) || input.expand) {
     const discovered = await discoverNicheAndPeers({
-      query: input.topic || own?.creator.title,
+      query: input.topic || own?.creator.title || peers.join(' '),
       uploads: own?.uploads ?? [],
       location: input.location
     });
     nicheLabel = discovered.nicheLabel;
-    peers = discovered.peerHandles.slice(0, 3);
+    const existing = new Set(peers.map(p => p.toLowerCase()));
+    const fresh = discovered.peerHandles.filter(h => !existing.has(h.toLowerCase()));
+    peers = [...peers, ...fresh].slice(0, input.expand ? 5 : 3);
   } else if (own) {
     const discovered = await discoverNicheAndPeers({
       query: own.creator.title,
@@ -259,9 +266,9 @@ export async function buildFullDigest(input: {
 
   const notes: string[] = [];
 
-  const results = source === 'own' && own ? [own] : await Promise.all(peers.map(async peer => {
+  const results = source === 'own' && own && !input.expand ? [own] : await Promise.all(peers.map(async peer => {
     try {
-      const result = await scanChannel(peer);
+      const result = await scanChannel(peer, lookbackHours, maxVideos);
       if (!result) notes.push(peer + ' could not be resolved.');
       return result;
     } catch (error) {
@@ -274,11 +281,12 @@ export async function buildFullDigest(input: {
   const providerFailure = results.find((result): result is ScanError => result instanceof ScanError);
   if (!channels.length && providerFailure) throw providerFailure;
 
-  if (source === 'peers') {
+  if (source === 'peers' || input.expand) {
     const validHandles = channels.map(c => c.creator.handle);
     const peerList = validHandles.length ? validHandles.join(', ') : peers.join(', ');
     const countLabel = `${validHandles.length || peers.length} ${(validHandles.length || peers.length) === 1 ? 'channel' : 'channels'}`;
-    notes.unshift(`Growth Mode Active: Your channel had <3 new questions in the last 72h, so we scanned ${countLabel} (${peerList}) in your niche.`);
+    const windowLabel = input.expand ? '14 days' : '72h';
+    notes.unshift(`Growth Mode Active: Scanned ${countLabel} (${peerList}) over the last ${windowLabel} in your niche.`);
   }
 
   const ownComments = channels.flatMap(channel => channel.comments)
@@ -313,6 +321,7 @@ export async function buildFullDigest(input: {
   return {
     channelKey: (own?.creator.handle ?? input.reference ?? nicheLabel).toLowerCase(),
     newCommentCount: ownComments.length,
+    discoveredPeers: peers,
     fullScripts: scripts,
     digest: {
       id,

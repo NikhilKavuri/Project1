@@ -208,7 +208,7 @@ export function Studio({
     return () => { active = false; };
   }, [embedded, live]);
 
-  async function runScan(targetQuery: string, targetPeers: string[]) {
+  async function runScan(targetQuery: string, targetPeers: string[], expand = false) {
     const trimmed = targetQuery.trim();
     if (!trimmed && !targetPeers.length) {
       setMessage('Enter a @handle, URL, or topic.');
@@ -242,7 +242,8 @@ export function Studio({
         body: JSON.stringify({
           reference: ref ? trimmed : '',
           topic: ref ? '' : topicLabel,
-          peers: activePeers
+          peers: activePeers,
+          expand
         })
       });
 
@@ -266,6 +267,9 @@ export function Studio({
 
       setInspection(null);
       setDigest(payload as Digest);
+      if (Array.isArray(payload.discoveredPeers) && payload.discoveredPeers.length) {
+        setPeers(payload.discoveredPeers);
+      }
       setSelected(0);
       notify(`Loaded ${(payload as Digest).scripts?.length ?? 0} scripts`, 'success');
     } catch (error) {
@@ -394,12 +398,24 @@ export function Studio({
       {!busy && (message || inspection?.message || digest?.notes[0]) && (
         <BlurFade>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-900/10 bg-white px-4 py-2.5 text-xs font-medium text-[#141518] shadow-sm">
-            <span>{message || inspection?.message || digest?.notes[0]}</span>
-            {digest?.niche && (
-              <span className="rounded-full bg-[#f1f3f6] px-2.5 py-0.5 font-semibold text-[#141518]">
-                {digest.niche}
-              </span>
-            )}
+            <span className="min-w-0 flex-1">{message || inspection?.message || digest?.notes[0]}</span>
+            <div className="flex items-center gap-2">
+              {digest?.niche && (
+                <span className="rounded-full bg-[#f1f3f6] px-2.5 py-0.5 font-semibold text-[#141518]">
+                  {digest.niche}
+                </span>
+              )}
+              {digest && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => runScan(query, peers, true)}
+                  className="inline-flex items-center gap-1 rounded-full bg-[#0b2545] px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-[#123663]"
+                >
+                  <Sparkles size={11} className="text-[#e85334]" /> Expand Niche (14d + More Peers)
+                </button>
+              )}
+            </div>
           </div>
         </BlurFade>
       )}

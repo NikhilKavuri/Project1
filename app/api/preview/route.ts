@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     const peers: string[] = Array.isArray(body.peers)
       ? body.peers.filter((v: unknown): v is string => typeof v === 'string').slice(0, 5)
       : [];
+    const expand = Boolean(body.expand);
 
     let userId = typeof body.userId === 'string' ? body.userId : undefined;
     if (!userId && isSupabaseConfigured()) {
@@ -64,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     const ref = reference ? normalizeHandle(reference) : null;
     if (reference && !ref && !topic) {
-      return await handlePreview({ reference: '', topic: reference, peers, userId, request });
+      return await handlePreview({ reference: '', topic: reference, peers, userId, expand, request });
     }
 
-    return await handlePreview({ reference, topic, peers, userId, request });
+    return await handlePreview({ reference, topic, peers, userId, expand, request });
   } catch (error) {
     console.error('[preview]', error);
     if (error instanceof ScanError) return Response.json({ error: error.message }, { status: error.status });
@@ -81,12 +82,14 @@ async function handlePreview({
   topic,
   peers,
   userId,
+  expand,
   request
 }: {
   reference: string;
   topic: string;
   peers: string[];
   userId?: string;
+  expand?: boolean;
   request: NextRequest;
 }) {
   takeScanSlot();
@@ -135,7 +138,7 @@ async function handlePreview({
   }
 
   const location = userState?.city && userState?.country ? `${userState.city}, ${userState.country}` : undefined;
-  const { digest, fullScripts } = await buildFullDigest({ reference, topic, peers, userId, location });
+  const { digest, fullScripts, discoveredPeers } = await buildFullDigest({ reference, topic, peers, userId, location, expand });
 
   // Logged-in users (or non-enforced local dev) get all 3 scripts unlocked
   if (userId || !enforceLocks) {
@@ -144,7 +147,7 @@ async function handlePreview({
       latestState.users[userState.userId].digests = [digest, ...latestState.users[userState.userId].digests].slice(0, 20);
       writeAppState(latestState);
     }
-    return Response.json({ ...digest, previewUsed: false, remainingTries: MAX_ANON_TRIES });
+    return Response.json({ ...digest, discoveredPeers, previewUsed: false, remainingTries: MAX_ANON_TRIES });
   }
 
   const redactedScripts = applyPreviewRedaction(fullScripts);

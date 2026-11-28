@@ -88,12 +88,16 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === 'delta_spy') {
-    const peers = userState.competitorHandles.length ? userState.competitorHandles : ['@JSFilmsIndia'];
-    const { digest } = await buildFullDigest({
-      reference: '',
+    const expand = Boolean(body.expand);
+    const peers = userState.competitorHandles.length ? userState.competitorHandles : [];
+    const location = userState.city && userState.country ? `${userState.city}, ${userState.country}` : undefined;
+    const { digest, discoveredPeers } = await buildFullDigest({
+      reference: userState.channelHandle || '',
       topic: 'Competitor Spy',
       peers,
-      userId
+      userId,
+      location,
+      expand
     });
     const rawQuestions = digest.scripts.flatMap(script =>
       'receipts' in script
@@ -111,11 +115,12 @@ export async function POST(request: NextRequest) {
 
     state.users[userId] = {
       ...userState,
+      competitorHandles: discoveredPeers.length ? discoveredPeers : userState.competitorHandles,
       lastSyncedAt: new Date().toISOString(),
       digests: [digest, ...userState.digests].slice(0, 20)
     };
     writeAppState(state);
-    return Response.json({ hijackQuestions, digest, account: state.users[userId] });
+    return Response.json({ hijackQuestions, digest, discoveredPeers, account: state.users[userId] });
   }
 
   return Response.json({ error: 'Unknown action.' }, { status: 400 });

@@ -161,17 +161,17 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
     }
   }
 
-  async function runDeltaSpy() {
+  async function runDeltaSpy(expand = false) {
     setBusy(true);
     setStatus('');
     try {
-      const data = await api('/api/dashboard', { action: 'delta_spy' });
+      const data = await api('/api/dashboard', { action: 'delta_spy', expand });
       applyState(data.account);
       setHijackQuestions(data.hijackQuestions ?? []);
       setTab('spy');
-      setStatus(`Synced ${data.hijackQuestions?.length ?? 0} competitor questions.`);
+      setStatus(`Synced ${data.hijackQuestions?.length ?? 0} competitor questions.`, 'success');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Competitor sync failed.');
+      setStatus(error instanceof Error ? error.message : 'Competitor sync failed.', 'error');
     } finally {
       setBusy(false);
     }
@@ -535,10 +535,18 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={runDeltaSpy}
+                        onClick={() => runDeltaSpy(false)}
                         className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#141518] transition hover:bg-[#f1f3f6]"
                       >
                         <RefreshCw size={13} className={cn(busy && 'animate-spin')} /> Sync Competitor Spy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => runDeltaSpy(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#e85334]/25 bg-[#fff8f6] px-4 py-2 text-xs font-semibold text-[#e85334] transition hover:bg-[#e85334] hover:text-white"
+                      >
+                        <Sparkles size={13} /> Expand Niche (14d)
                       </button>
                     </div>
                   </form>
