@@ -33,7 +33,12 @@ export async function POST(request: NextRequest) {
 
   if (body.action === 'complete_onboarding') {
     const channelHandle = typeof body.channelHandle === 'string' ? body.channelHandle.trim() : '';
+    const city = typeof body.city === 'string' ? body.city.trim().slice(0, 80) : '';
+    const country = typeof body.country === 'string' ? body.country.trim().slice(0, 80) : '';
     const instagramUrl = typeof body.instagramUrl === 'string' ? body.instagramUrl.trim().slice(0, 300) : '';
+    if (!channelHandle || !city || !country) {
+      return Response.json({ error: 'Enter your YouTube channel, city, and country to continue.' }, { status: 400 });
+    }
     const competitorHandles: string[] = Array.isArray(body.competitorHandles)
       ? body.competitorHandles
         .map((h: unknown) => normalizeHandle(String(h)))
@@ -44,8 +49,10 @@ export async function POST(request: NextRequest) {
 
     state.users[userId] = {
       ...userState,
-      channelHandle: channelHandle || userState.channelHandle,
+      channelHandle,
       competitorHandles,
+      city,
+      country,
       instagramUrl,
       onboarded: true
     };

@@ -90,7 +90,7 @@ export function AuthCard({
           <div className="absolute -left-10 -top-12 h-48 w-56 rounded-full bg-[#e85334]" />
           <div className={cn(
             'absolute rounded-full bg-[#0b2545]',
-            wide ? '-right-10 -top-8 h-48 w-52 md:-bottom-16 md:-right-12 md:top-auto md:h-64 md:w-64' : '-right-8 -top-10 h-44 w-52'
+            wide ? '-right-10 -top-8 h-44 w-48 md:-bottom-32 md:-right-20 md:top-auto md:h-52 md:w-52 md:opacity-95' : '-right-8 -top-10 h-44 w-52'
           )} />
 
           {!wide && (
@@ -138,15 +138,15 @@ export function AuthCard({
           </motion.div>
 
           {wide && (
-            <div className="relative z-10 hidden md:block">
-              <h2 className="text-2xl font-bold tracking-tight text-[#141518]">
+            <div className="relative z-10 hidden rounded-2xl bg-white/90 p-4 shadow-sm backdrop-blur-sm md:block">
+              <h2 className="text-xl font-bold tracking-tight text-[#141518]">
                 Turn comments into{' '}
                 <span className="text-[#e85334]">daily Shorts</span>
               </h2>
-              <p className="mt-2 text-xs leading-relaxed text-[#646975]">
+              <p className="mt-1.5 text-xs leading-relaxed text-[#4b5563]">
                 Unlock all 3 viewer-backed scripts, competitor comment spy, and automated delivery on your schedule.
               </p>
-              <div className="mt-5 rounded-2xl border border-slate-900/10 bg-white/95 p-3.5 shadow-md">
+              <div className="mt-3.5 rounded-xl border border-slate-900/10 bg-[#f8f9fb] p-3">
                 <p className="text-[11px] font-bold text-[#0b2545]">Included with your account</p>
                 <p className="mt-1 text-[11px] text-[#646975]">
                   Unlimited script unlocks · Reply sticker PNGs · 48h / 72h / Weekly sync
@@ -211,13 +211,26 @@ export function AuthCard({
               </p>
             )}
 
+            {busy && (
+              <div className="space-y-2 rounded-xl bg-[#f8f9fb] p-3 text-center">
+                <div className="mx-auto h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <motion.div
+                    className="h-full w-1/2 rounded-full bg-[#e85334]"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ repeat: Infinity, duration: 1.0, ease: 'easeInOut' }}
+                  />
+                </div>
+                <p className="text-[11px] font-medium text-[#646975]">Signing in…</p>
+              </div>
+            )}
+
             <ShimmerButton
               type="submit"
               disabled={busy}
               className="h-11 w-full rounded-xl bg-[#0b2545] text-xs font-semibold shadow-md hover:bg-[#123663]"
             >
-              <Sparkles size={13} className="text-[#e85334]" />
-              <span>{busy ? 'Please wait…' : mode === 'signin' ? 'Login' : 'Create Account'}</span>
+              <Sparkles size={13} className={busy ? 'animate-spin text-[#e85334]' : 'text-[#e85334]'} />
+              <span>{busy ? 'Signing in…' : mode === 'signin' ? 'Login' : 'Create Account'}</span>
             </ShimmerButton>
           </form>
 

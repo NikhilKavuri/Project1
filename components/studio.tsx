@@ -98,17 +98,27 @@ function HeroVisual() {
   );
 }
 
-export function Studio({ live, embedded = false }: { live: boolean; embedded?: boolean }) {
+export function Studio({
+  live,
+  embedded = false,
+  initialLoggedIn = false
+}: {
+  live: boolean;
+  embedded?: boolean;
+  initialLoggedIn?: boolean;
+}) {
   const [query, setQuery] = useState('');
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [peers, setPeers] = useState<string[]>([]);
   const [customPeer, setCustomPeer] = useState('');
   const [digest, setDigest] = useState<Digest | null>(null);
+  const [savedDigests, setSavedDigests] = useState<Digest[]>([]);
+  const [locationLabel, setLocationLabel] = useState('');
   const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [remainingTries, setRemainingTries] = useState<number>(2);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(initialLoggedIn);
   const [paywallModal, setPaywallModal] = useState<{ open: boolean; handle: string; newComments: number }>({
     open: false,
     handle: '',
@@ -129,8 +139,24 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
         }
         if (acct?.email) {
           if (active) setLoggedIn(true);
+          const dashRes = await fetch('/api/dashboard');
+          if (dashRes.ok) {
+            const dash = await dashRes.json();
+            if (!dash.account?.onboarded && !embedded) {
+              window.location.href = '/dashboard';
+              return;
+            }
+            if (active && dash.account) {
+              if (dash.account.channelHandle) setQuery(prev => prev || dash.account.channelHandle);
+              if (Array.isArray(dash.account.competitorHandles)) setPeers(dash.account.competitorHandles.slice(0, 5));
+              if (dash.account.city && dash.account.country) setLocationLabel(`${dash.account.city}, ${dash.account.country}`);
+              if (Array.isArray(dash.account.digests)) setSavedDigests(dash.account.digests.slice(0, 3));
+            }
+          }
           const response = await fetch('/api/workspace');
           if (response.ok) profile = (await response.json()).profile;
+        } else if (active) {
+          setLoggedIn(false);
         }
       } catch {
         // Offline/local fallback
@@ -140,7 +166,7 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
         if (!active || !profile) return;
         if (profile.channel_handle) setQuery(prev => prev || profile?.channel_handle || '');
         if (Array.isArray(profile.competitor_handles) && profile.competitor_handles.length) {
-          setPeers(profile.competitor_handles.slice(0, 3));
+          setPeers(prev => (prev.length ? prev : profile?.competitor_handles?.slice(0, 3) ?? []));
         }
       } catch {
         // Fresh workspace
@@ -148,7 +174,7 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
     }
     void loadInitial();
     return () => { active = false; };
-  }, []);
+  }, [embedded]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -605,6 +631,82 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
             </ShimmerButton>
           </form>
         </div>
+        {loggedIn && !digest && !busy && (
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <BlurFade delay={0.03}>
+              <BentoTile className="flex h-full flex-col justify-between p-5">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e85334]/10 px-2.5 py-1 text-[11px] font-semibold text-[#e85334]">
+                    <Sparkles size={11} /> Default Channel
+                  </span>
+                  <h2 className="mt-3 text-base font-bold text-[#141518]">
+                    {query || 'Your YouTube Channel'}
+                  </h2>
+                  <p className="mt-1 text-xs text-[#646975]">
+                    {locationLabel ? `Location: ${locationLabel}` : 'Ready for instant comment scan'}
+                  </p>
+                </div>
+                <ShimmerButton
+                  type="button"
+                  disabled={!query.trim() || busy}
+                  onClick={() => {
+                    const form = document.querySelector('form');
+                    form?.requestSubmit();
+                  }}
+                  className="mt-4 w-full bg-[#0b2545]"
+                >
+                  Scan My Channel
+                </ShimmerButton>
+              </BentoTile>
+            </BlurFade>
+
+            <BlurFade delay={0.07}>
+              <BentoTile className="h-full p-5">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2545]/10 px-2.5 py-1 text-[11px] font-semibold text-[#0b2545]">
+                  Niche Peers ({peers.length})
+                </span>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {peers.length ? peers.map(peer => (
+                    <button
+                      key={peer}
+                      type="button"
+                      onClick={() => setQuery(peer)}
+                      className="rounded-full bg-[#f1f3f6] px-3 py-1.5 text-xs font-semibold text-[#141518] transition hover:bg-[#e85334] hover:text-white"
+                    >
+                      {peer}
+                    </button>
+                  )) : (
+                    <p className="text-xs text-[#646975]">Add competitor handles in Dashboard.</p>
+                  )}
+                </div>
+              </BentoTile>
+            </BlurFade>
+
+            <BlurFade delay={0.11}>
+              <BentoTile className="h-full p-5">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                  Recent Digests ({savedDigests.length})
+                </span>
+                <div className="mt-3 space-y-2">
+                  {savedDigests.length ? savedDigests.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => { setDigest(item); setSelected(0); }}
+                      className="flex w-full items-center justify-between rounded-xl bg-[#f1f3f6] px-3 py-2 text-left text-xs transition hover:bg-slate-200/70"
+                    >
+                      <span className="truncate font-semibold text-[#141518]">{item.niche}</span>
+                      <span className="shrink-0 text-[#646975]">{item.scripts.length} scripts</span>
+                    </button>
+                  )) : (
+                    <p className="text-xs text-[#646975]">Your scanned digests will appear here.</p>
+                  )}
+                </div>
+              </BentoTile>
+            </BlurFade>
+          </div>
+        )}
+
         {scanResultsSection}
         {modal}
       </div>
@@ -776,6 +878,82 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
             </ShimmerButton>
           </form>
         </div>
+
+        {loggedIn && !digest && !busy && (
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <BlurFade delay={0.03}>
+              <BentoTile className="flex h-full flex-col justify-between p-5">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e85334]/10 px-2.5 py-1 text-[11px] font-semibold text-[#e85334]">
+                    <Sparkles size={11} /> Default Channel
+                  </span>
+                  <h2 className="mt-3 text-base font-bold text-[#141518]">
+                    {query || 'Your YouTube Channel'}
+                  </h2>
+                  <p className="mt-1 text-xs text-[#646975]">
+                    {locationLabel ? `Location: ${locationLabel}` : 'Ready for instant comment scan'}
+                  </p>
+                </div>
+                <ShimmerButton
+                  type="button"
+                  disabled={!query.trim() || busy}
+                  onClick={() => {
+                    const form = document.querySelector('form');
+                    form?.requestSubmit();
+                  }}
+                  className="mt-4 w-full bg-[#0b2545]"
+                >
+                  Scan My Channel
+                </ShimmerButton>
+              </BentoTile>
+            </BlurFade>
+
+            <BlurFade delay={0.07}>
+              <BentoTile className="h-full p-5">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2545]/10 px-2.5 py-1 text-[11px] font-semibold text-[#0b2545]">
+                  Niche Peers ({peers.length})
+                </span>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {peers.length ? peers.map(peer => (
+                    <button
+                      key={peer}
+                      type="button"
+                      onClick={() => setQuery(peer)}
+                      className="rounded-full bg-[#f1f3f6] px-3 py-1.5 text-xs font-semibold text-[#141518] transition hover:bg-[#e85334] hover:text-white"
+                    >
+                      {peer}
+                    </button>
+                  )) : (
+                    <p className="text-xs text-[#646975]">Add competitor handles in Dashboard.</p>
+                  )}
+                </div>
+              </BentoTile>
+            </BlurFade>
+
+            <BlurFade delay={0.11}>
+              <BentoTile className="h-full p-5">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                  Recent Digests ({savedDigests.length})
+                </span>
+                <div className="mt-3 space-y-2">
+                  {savedDigests.length ? savedDigests.map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => { setDigest(item); setSelected(0); }}
+                      className="flex w-full items-center justify-between rounded-xl bg-[#f1f3f6] px-3 py-2 text-left text-xs transition hover:bg-slate-200/70"
+                    >
+                      <span className="truncate font-semibold text-[#141518]">{item.niche}</span>
+                      <span className="shrink-0 text-[#646975]">{item.scripts.length} scripts</span>
+                    </button>
+                  )) : (
+                    <p className="text-xs text-[#646975]">Your scanned digests will appear here.</p>
+                  )}
+                </div>
+              </BentoTile>
+            </BlurFade>
+          </div>
+        )}
 
         {scanResultsSection}
       </div>

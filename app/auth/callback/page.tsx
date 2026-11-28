@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -43,8 +45,8 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[#f8f9fb] p-6">
-      <div className="w-full max-w-sm rounded-3xl border border-slate-900/10 bg-white p-6 text-center shadow-lg">
+    <div className="grid min-h-screen place-items-center bg-[#f1f3f6] p-6">
+      <div className="w-full max-w-sm rounded-3xl border border-slate-900/10 bg-white p-7 text-center shadow-xl">
         {error ? (
           <>
             <p className="text-sm font-semibold text-[#e85334]">{error}</p>
@@ -53,7 +55,23 @@ export default function AuthCallbackPage() {
             </Link>
           </>
         ) : (
-          <p className="text-sm font-medium text-[#646975]">Signing you in…</p>
+          <div className="space-y-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1.4, ease: 'linear' }}
+              className="mx-auto grid h-11 w-11 place-items-center rounded-2xl bg-[#0b2545] text-white shadow-md"
+            >
+              <Sparkles size={18} className="text-[#e85334]" />
+            </motion.div>
+            <p className="text-sm font-semibold text-[#141518]">Signing you in…</p>
+            <div className="mx-auto h-1.5 w-44 overflow-hidden rounded-full bg-[#f1f3f6]">
+              <motion.div
+                className="h-full w-1/2 rounded-full bg-[#e85334]"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

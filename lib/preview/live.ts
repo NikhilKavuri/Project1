@@ -123,6 +123,7 @@ export async function buildFullDigest(input: {
   topic?: string;
   peers: string[];
   userId?: string;
+  location?: string;
 }): Promise<{ digest: Digest; fullScripts: Script[]; channelKey: string; newCommentCount: number }> {
   const own = input.reference ? await scanChannel(input.reference) : null;
   let peers = input.peers;
@@ -234,12 +235,17 @@ export async function buildFullDigest(input: {
   if ((!own || needsPeers(own)) && !peers.length) {
     const discovered = await discoverNicheAndPeers({
       query: input.topic || own?.creator.title,
-      uploads: own?.uploads ?? []
+      uploads: own?.uploads ?? [],
+      location: input.location
     });
     nicheLabel = discovered.nicheLabel;
     peers = discovered.peerHandles.slice(0, 3);
   } else if (own) {
-    const discovered = await discoverNicheAndPeers({ query: own.creator.title, uploads: own.uploads }).catch(() => null);
+    const discovered = await discoverNicheAndPeers({
+      query: own.creator.title,
+      uploads: own.uploads,
+      location: input.location
+    }).catch(() => null);
     if (discovered?.nicheLabel) nicheLabel = discovered.nicheLabel;
   }
 

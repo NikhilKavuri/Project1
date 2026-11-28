@@ -134,7 +134,8 @@ async function handlePreview({
     }
   }
 
-  const { digest, fullScripts } = await buildFullDigest({ reference, topic, peers, userId });
+  const location = userState?.city && userState?.country ? `${userState.city}, ${userState.country}` : undefined;
+  const { digest, fullScripts } = await buildFullDigest({ reference, topic, peers, userId, location });
 
   // Logged-in users (or non-enforced local dev) get all 3 scripts unlocked
   if (userId || !enforceLocks) {

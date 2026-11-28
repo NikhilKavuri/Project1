@@ -12,14 +12,16 @@ const discoveryCache = new Map<string, { expires: number; result: DiscoveryResul
 
 export async function discoverNicheAndPeers({
   query,
-  uploads = []
+  uploads = [],
+  location
 }: {
   query?: string;
   uploads?: Pick<Upload, 'title' | 'description'>[];
+  location?: string;
 }): Promise<DiscoveryResult> {
   const key = (process.env.GEMINI_API_KEY ?? '').trim();
   const model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
-  const cacheKey = (query?.trim().toLowerCase() || '') + '|' + uploads.map(u => u.title).join('|').slice(0, 180);
+  const cacheKey = (query?.trim().toLowerCase() || '') + '|' + (location?.trim().toLowerCase() || '') + '|' + uploads.map(u => u.title).join('|').slice(0, 160);
   const cached = discoveryCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return cached.result;
 
@@ -29,6 +31,7 @@ export async function discoverNicheAndPeers({
 
   const contextLines = [
     query ? `User search query: ${JSON.stringify(query.trim())}` : '',
+    location ? `Creator location (prioritize creators from or relevant to this region): ${JSON.stringify(location.trim())}` : '',
     uploads.length
       ? `Recent uploads:\n${uploads.slice(0, 5).map(u => `- ${u.title} (${u.description.slice(0, 140)})`).join('\n')}`
       : ''

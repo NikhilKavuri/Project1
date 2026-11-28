@@ -23,6 +23,8 @@ export type UserAccountState = {
   triggerOnNewUpload: boolean;
   channelHandle: string;
   competitorHandles: string[];
+  city?: string;
+  country?: string;
   instagramUrl?: string;
   onboarded?: boolean;
   lastSyncedAt: string | null;
@@ -93,6 +95,7 @@ export function applyPreviewRedaction(scripts: Script[]): ScriptItem[] {
 export function getOrCreateUserState(userId: string, email = `${userId}@clipspill.local`): UserAccountState {
   const state = readAppState();
   if (!state.users[userId]) {
+    const isDemo = userId === 'demo-creator';
     state.users[userId] = {
       userId,
       email,
@@ -101,8 +104,11 @@ export function getOrCreateUserState(userId: string, email = `${userId}@clipspil
       frequencyHours: 48,
       preferredHourIst: 9,
       triggerOnNewUpload: false,
-      channelHandle: '@TestMotoChannel',
-      competitorHandles: ['@JSFilmsIndia'],
+      channelHandle: isDemo ? '@TestMotoChannel' : '',
+      competitorHandles: isDemo ? ['@JSFilmsIndia'] : [],
+      city: '',
+      country: '',
+      onboarded: isDemo,
       lastSyncedAt: null,
       nextRunAt: new Date(Date.now() + 48 * 3_600_000).toISOString(),
       digests: []

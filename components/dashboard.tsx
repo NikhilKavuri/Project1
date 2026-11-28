@@ -43,8 +43,10 @@ async function api(path: string, payload?: unknown) {
 export function Dashboard({ testMode = false }: { testMode?: boolean }) {
   const [account, setAccount] = useState<Account>({ configured: false, email: null });
   const [state, setState] = useState<UserAccountState | null>(null);
-  const [channelHandle, setChannelHandle] = useState('@TestMotoChannel');
-  const [peers, setPeers] = useState('@JSFilmsIndia');
+  const [channelHandle, setChannelHandle] = useState('');
+  const [peers, setPeers] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [frequencyHours, setFrequencyHours] = useState(48);
   const [preferredHourIst, setPreferredHourIst] = useState(9);
@@ -62,6 +64,8 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
     setState(next);
     setChannelHandle(next.channelHandle);
     setPeers(next.competitorHandles.join(', '));
+    setCity(next.city ?? '');
+    setCountry(next.country ?? '');
     setInstagramUrl(next.instagramUrl ?? '');
     setFrequencyHours(next.frequencyHours);
     setPreferredHourIst(next.preferredHourIst);
@@ -94,6 +98,8 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
       const data = await api('/api/dashboard', {
         action: 'complete_onboarding',
         channelHandle,
+        city,
+        country,
         competitorHandles: peers.split(/[\s,]+/).filter(Boolean),
         instagramUrl
       });
@@ -182,7 +188,9 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
           <div className="flex items-center gap-6">
             <Brand />
             <nav aria-label="Main navigation" className="flex items-center gap-5 text-sm font-medium">
-              <Link href="/" className="pb-1 text-[#646975] transition hover:text-[#141518]">Studio</Link>
+              {!needsOnboarding && (
+                <Link href="/" className="pb-1 text-[#646975] transition hover:text-[#141518]">Studio</Link>
+              )}
               {isUnlockedDashboard && (
                 <Link href="/dashboard" className="border-b-2 border-[#141518] pb-1 text-[#141518]">Dashboard</Link>
               )}
@@ -204,12 +212,14 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                 </button>
               </>
             )}
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#141518] shadow-sm transition hover:bg-slate-50"
-            >
-              <ArrowLeft size={14} /> Studio
-            </Link>
+            {!needsOnboarding && (
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-900/10 bg-white px-4 py-2 text-xs font-medium text-[#141518] shadow-sm transition hover:bg-slate-50"
+              >
+                <ArrowLeft size={14} /> Studio
+              </Link>
+            )}
           </div>
         </header>
 
@@ -246,14 +256,38 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
 
               <form onSubmit={submitOnboarding} className="mt-6 space-y-4">
                 <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
-                  <span>Your YouTube Channel (@handle or URL)</span>
+                  <span>Your YouTube Channel (@handle or URL) *</span>
                   <input
+                    required
                     className={inputCls}
                     placeholder="@YourChannel"
                     value={channelHandle}
                     onChange={e => setChannelHandle(e.target.value)}
                   />
                 </label>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
+                    <span>City *</span>
+                    <input
+                      required
+                      className={inputCls}
+                      placeholder="e.g. Hyderabad"
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                    />
+                  </label>
+                  <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
+                    <span>Country *</span>
+                    <input
+                      required
+                      className={inputCls}
+                      placeholder="e.g. India"
+                      value={country}
+                      onChange={e => setCountry(e.target.value)}
+                    />
+                  </label>
+                </div>
 
                 <label className="grid gap-1.5 text-xs font-semibold text-[#141518]">
                   <span>Competitor / Similar Niche Channels (up to 5)</span>
