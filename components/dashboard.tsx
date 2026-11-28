@@ -675,7 +675,7 @@ export function Dashboard({ testMode = false }: { testMode?: boolean }) {
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
                         <span className="text-xs font-medium text-[#646975]">
-                          Sorted by Gemini video potential ({hijackQuestions.filter(q => q.stealDeal).length} steal deals found)
+                          Sorted by video potential ({hijackQuestions.filter(q => q.stealDeal).length} steal deals found)
                         </span>
                         <button
                           type="button"
