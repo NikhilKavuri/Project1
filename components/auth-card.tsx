@@ -6,11 +6,14 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Sparkles } from 'lucide-react';
 import { BlurFade } from './magicui/blur-fade';
 import { ShimmerButton } from './magicui/shimmer-button';
+import { cn } from '@/lib/utils';
 
 export function AuthCard({
-  onSuccess
+  onSuccess,
+  wide = false
 }: {
   onSuccess?: () => void;
+  wide?: boolean;
 }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -71,28 +74,59 @@ export function AuthCard({
 
   return (
     <BlurFade>
-      <div className="mx-auto w-full max-w-[400px] overflow-hidden rounded-[28px] border border-slate-900/[0.08] bg-white shadow-[0_24px_64px_-20px_rgba(20,21,24,0.18)]">
-        {/* Creative curved geometric header inspired by reference */}
-        <div className="relative h-40 overflow-hidden bg-[#f1f3f6]">
+      <div
+        className={cn(
+          'mx-auto w-full overflow-hidden rounded-[28px] border border-slate-900/[0.08] bg-white shadow-[0_28px_70px_-18px_rgba(11,37,69,0.22)]',
+          wide ? 'max-w-[880px] md:grid md:grid-cols-12' : 'max-w-[420px]'
+        )}
+      >
+        {/* Creative curved geometric header / left desktop panel */}
+        <div
+          className={cn(
+            'relative overflow-hidden bg-[#f1f3f6]',
+            wide ? 'h-36 md:col-span-5 md:flex md:h-auto md:flex-col md:justify-between md:p-8' : 'h-40'
+          )}
+        >
           <div className="absolute -left-10 -top-12 h-48 w-56 rounded-full bg-[#e85334]" />
-          <div className="absolute -right-8 -top-10 h-44 w-52 rounded-full bg-[#0b2545]" />
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 400 48"
-            preserveAspectRatio="none"
-            className="absolute bottom-0 left-0 h-10 w-full fill-white"
-          >
-            <path d="M0,24 C120,54 280,0 400,28 L400,48 L0,48 Z" />
-          </svg>
+          <div className={cn(
+            'absolute rounded-full bg-[#0b2545]',
+            wide ? '-right-10 -top-8 h-48 w-52 md:-bottom-16 md:-right-12 md:top-auto md:h-64 md:w-64' : '-right-8 -top-10 h-44 w-52'
+          )} />
 
-          {/* Centered brand icon straddling the curve */}
+          {!wide && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 400 48"
+              preserveAspectRatio="none"
+              className="absolute bottom-0 left-0 h-10 w-full fill-white"
+            >
+              <path d="M0,24 C120,54 280,0 400,28 L400,48 L0,48 Z" />
+            </svg>
+          )}
+          {wide && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 400 48"
+              preserveAspectRatio="none"
+              className="absolute bottom-0 left-0 h-10 w-full fill-white md:hidden"
+            >
+              <path d="M0,24 C120,54 280,0 400,28 L400,48 L0,48 Z" />
+            </svg>
+          )}
+
+          {/* Brand badge */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.35 }}
-            className="absolute bottom-3 left-1/2 z-10 grid h-16 w-16 -translate-x-1/2 place-items-center rounded-2xl border border-slate-900/[0.06] bg-white shadow-lg"
+            className={cn(
+              'z-10 grid h-14 w-14 place-items-center rounded-2xl border border-slate-900/[0.06] bg-white shadow-lg',
+              wide
+                ? 'absolute bottom-3 left-1/2 -translate-x-1/2 md:static md:translate-x-0'
+                : 'absolute bottom-3 left-1/2 -translate-x-1/2'
+            )}
           >
-            <svg className="h-9 w-9" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <svg className="h-8 w-8" viewBox="0 0 64 64" fill="none" aria-hidden="true">
               <rect width="64" height="64" rx="16" fill="#141518" />
               <path
                 d="M18 22.5C18 19.4624 20.4624 17 23.5 17H40.5C43.5376 17 46 19.4624 46 22.5V35.5C46 38.5376 43.5376 41 40.5 41H28L20 47V41H23.5C20.4624 41 18 38.5376 18 35.5V22.5Z"
@@ -102,11 +136,29 @@ export function AuthCard({
               <circle cx="47" cy="47" r="4" fill="#e85334" />
             </svg>
           </motion.div>
+
+          {wide && (
+            <div className="relative z-10 hidden md:block">
+              <h2 className="text-2xl font-bold tracking-tight text-[#141518]">
+                Turn comments into{' '}
+                <span className="text-[#e85334]">daily Shorts</span>
+              </h2>
+              <p className="mt-2 text-xs leading-relaxed text-[#646975]">
+                Unlock all 3 viewer-backed scripts, competitor comment spy, and automated delivery on your schedule.
+              </p>
+              <div className="mt-5 rounded-2xl border border-slate-900/10 bg-white/95 p-3.5 shadow-md">
+                <p className="text-[11px] font-bold text-[#0b2545]">Included with your account</p>
+                <p className="mt-1 text-[11px] text-[#646975]">
+                  Unlimited script unlocks · Reply sticker PNGs · 48h / 72h / Weekly sync
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="px-7 pb-7 pt-2">
-          <div className="text-center">
-            <h1 className="text-xl font-bold tracking-tight text-[#141518]">
+        <div className={cn('px-7 pb-7 pt-3', wide && 'md:col-span-7 md:p-9')}>
+          <div className={cn('text-center', wide && 'md:text-left')}>
+            <h1 className="text-xl font-bold tracking-tight text-[#141518] sm:text-2xl">
               Clip<span className="text-[#e85334]">Spill</span>
             </h1>
             <p className="mt-1 text-xs text-[#646975]">
@@ -162,7 +214,7 @@ export function AuthCard({
             <ShimmerButton
               type="submit"
               disabled={busy}
-              className="h-11 w-full rounded-xl bg-[#0b2545] text-xs font-semibold hover:bg-[#123663]"
+              className="h-11 w-full rounded-xl bg-[#0b2545] text-xs font-semibold shadow-md hover:bg-[#123663]"
             >
               <Sparkles size={13} className="text-[#e85334]" />
               <span>{busy ? 'Please wait…' : mode === 'signin' ? 'Login' : 'Create Account'}</span>
@@ -179,7 +231,7 @@ export function AuthCard({
             type="button"
             disabled={busy}
             onClick={googleSignIn}
-            className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-slate-900/15 bg-white text-xs font-semibold text-[#141518] transition hover:bg-[#f8f9fb]"
+            className="flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-slate-900/15 bg-white text-xs font-semibold text-[#141518] shadow-sm transition hover:bg-[#f8f9fb]"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />

@@ -613,37 +613,37 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
 
   if (showLandingHero) {
     return (
-      <div className="min-h-screen overflow-x-hidden bg-white">
-        <section className="relative overflow-hidden bg-[#f1f3f6] pb-20 text-[#141518] sm:pb-28">
-          <div className="mx-auto max-w-[1220px] px-4 pt-5 sm:px-6 md:px-10">
+      <div className="flex min-h-screen flex-col justify-between overflow-x-hidden bg-white">
+        <section className="relative flex-1 overflow-hidden bg-[#f1f3f6] pb-14 text-[#141518] sm:pb-20">
+          <div className="mx-auto max-w-[1220px] px-4 pt-4 sm:px-6 md:px-10">
             <header className="flex items-center justify-between gap-3">
               <Brand />
               <div className="flex items-center gap-2.5">
-                <span className="rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-medium text-[#141518]">
+                <span className="rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-medium text-[#141518] shadow-sm">
                   {remainingTries}/2 free scans left
                 </span>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2545] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#123663]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#0b2545] px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:bg-[#123663]"
                 >
                   Log In
                 </Link>
               </div>
             </header>
 
-            <div className="mt-8 grid grid-cols-1 items-center gap-8 sm:mt-12 sm:gap-10 lg:grid-cols-12">
+            <div className="mt-6 grid grid-cols-1 items-center gap-6 sm:mt-8 sm:gap-8 lg:grid-cols-12">
               <BlurFade className="lg:col-span-6">
                 <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#e85334] sm:text-[11px]">
                   CLIPSPILL · COMMENT-TO-SCRIPT ENGINE
                 </span>
-                <h1 className="mt-2.5 text-3xl font-extrabold uppercase leading-[1.05] tracking-tight text-[#141518] sm:mt-3 sm:text-5xl lg:text-6xl">
+                <h1 className="mt-2 text-3xl font-extrabold uppercase leading-[1.03] tracking-tight text-[#141518] sm:text-5xl lg:text-[54px]">
                   Viewer questions to ready scripts
                 </h1>
-                <p className="mt-4 max-w-md text-sm leading-relaxed text-[#646975] sm:text-base">
+                <p className="mt-3 max-w-md text-sm leading-relaxed text-[#646975]">
                   Turn repeated YouTube &amp; Reels viewer questions into 35-second vertical scripts backed by real comment proof.
                 </p>
 
-                <form onSubmit={submit} className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                <form onSubmit={submit} className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
                     <input
                       aria-label="Search channel or topic"
@@ -652,11 +652,11 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
                       disabled={busy}
                       maxLength={600}
                       onChange={event => { setQuery(event.target.value); setMessage(''); }}
-                      className="w-full rounded-full border border-slate-900/10 bg-white py-3.5 pl-5 pr-11 text-sm text-[#141518] shadow-sm placeholder:text-[#9ca3af] focus:border-[#e85334] focus:outline-none"
+                      className="w-full rounded-full border border-slate-900/10 bg-white py-3.5 pl-5 pr-11 text-sm text-[#141518] shadow-[0_10px_28px_-10px_rgba(11,37,69,0.18)] placeholder:text-[#9ca3af] focus:border-[#e85334] focus:outline-none"
                     />
                     <Search size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#646975]" />
                   </div>
-                  <ShimmerButton type="submit" disabled={busy} className="h-12 px-7 text-xs font-bold uppercase tracking-wider">
+                  <ShimmerButton type="submit" disabled={busy} className="h-12 px-7 text-xs font-bold uppercase tracking-wider shadow-[0_12px_28px_-8px_rgba(11,37,69,0.35)]">
                     <Sparkles size={14} className="text-[#e85334]" />
                     <span>{busy ? 'Scanning…' : 'Scan'}</span>
                   </ShimmerButton>
@@ -678,15 +678,15 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
             aria-hidden="true"
             viewBox="0 0 1440 90"
             preserveAspectRatio="none"
-            className="pointer-events-none absolute bottom-0 left-0 h-14 w-full fill-white sm:h-20"
+            className="pointer-events-none absolute bottom-0 left-0 h-12 w-full fill-white sm:h-16"
           >
             <path d="M0,45 C360,95 1080,0 1440,55 L1440,90 L0,90 Z" />
           </svg>
         </section>
 
         {/* Overlapping 3-column feature cards */}
-        <section className="relative z-20 mx-auto -mt-10 max-w-[1140px] px-4 pb-16 sm:-mt-16 sm:px-6 md:px-10">
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <section className="relative z-20 mx-auto -mt-8 w-full max-w-[1140px] px-4 pb-6 sm:-mt-12 sm:px-6 md:px-10">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
             {[
               {
                 icon: Search,
@@ -710,15 +710,15 @@ export function Studio({ live, embedded = false }: { live: boolean; embedded?: b
                   <motion.div
                     whileHover={{ y: -6 }}
                     transition={{ duration: 0.22 }}
-                    className="h-full rounded-2xl border border-slate-900/[0.08] bg-white p-7 text-center text-[#141518] shadow-[0_14px_40px_-14px_rgba(20,21,24,0.12)]"
+                    className="h-full rounded-2xl border border-slate-900/[0.08] bg-white p-5 text-center text-[#141518] shadow-[0_20px_50px_-12px_rgba(11,37,69,0.16)] transition-shadow hover:shadow-[0_28px_60px_-12px_rgba(11,37,69,0.22)] sm:p-6"
                   >
-                    <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#f1f3f6] text-[#e85334]">
-                      <Icon size={26} strokeWidth={1.9} />
+                    <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[#f1f3f6] text-[#e85334] shadow-sm">
+                      <Icon size={22} strokeWidth={1.9} />
                     </div>
-                    <h2 className="mt-5 text-sm font-extrabold uppercase tracking-wider text-[#141518]">
+                    <h2 className="mt-4 text-xs font-extrabold uppercase tracking-wider text-[#141518] sm:text-sm">
                       {card.title}
                     </h2>
-                    <p className="mt-2.5 text-xs leading-relaxed text-[#646975]">
+                    <p className="mt-2 text-xs leading-relaxed text-[#646975]">
                       {card.desc}
                     </p>
                   </motion.div>
