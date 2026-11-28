@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownToLine, ArrowUpRight, Check, Clipboard, Lock, MessageSquare, Play, Sparkles, TrendingUp } from 'lucide-react';
 import { isLockedScript, type Angle, type Format, type Receipt, type ScriptItem } from '../lib/preview/types';
 import { BlurFade } from './magicui/blur-fade';
-import { BorderBeam } from './magicui/border-beam';
 import { MagicCard } from './magicui/magic-card';
 import { NumberTicker } from './magicui/number-ticker';
 import { cn } from '@/lib/utils';
@@ -124,7 +123,6 @@ export function ScriptCard({
   return (
     <BlurFade delay={0.05}>
       <MagicCard className="p-5 sm:p-6">
-        <BorderBeam duration={10} />
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="text-xl font-semibold tracking-tight text-[#181c24] sm:text-2xl">

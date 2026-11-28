@@ -126,6 +126,9 @@ export async function buildFullDigest(input: {
   location?: string;
 }): Promise<{ digest: Digest; fullScripts: Script[]; channelKey: string; newCommentCount: number }> {
   const own = input.reference ? await scanChannel(input.reference) : null;
+  if (input.reference && !own && process.env.MOCK_YOUTUBE_API !== 'true') {
+    throw new ScanError(`Could not find YouTube channel "${input.reference}". Check the @handle spelling.`, 404);
+  }
   let peers = input.peers;
   let nicheLabel = input.topic?.trim() || 'Creator Niche';
 
